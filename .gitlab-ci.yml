@@ -41,11 +41,12 @@ build-image:
     - cat tigers/Config.in
     - cat tigers/configs/pizero2w_defconfig
     - export BR2_CCACHE_DIR="$PWD/buildroot-ccache"
-    - cd buildroot
-    - make BR2_EXTERNAL=../tigers pizero2w_defconfig
+    - cd tigers
+    - make pizero2w_defconfig
+    - cd output/pizero2w
     - make clean
     - make -j6
-    - cd ../..
+    - cd ../../..
     - 'echo "ssl-tracking-cam: $CI_COMMIT_REF_NAME ($CI_COMMIT_SHA)" >> versions'
     - mkdir -p ssl-tracking-cam
     - mv tigers-buildroot/tigers/output/pizero2w/images/sdcard.img ssl-tracking-cam/sdcard.img
