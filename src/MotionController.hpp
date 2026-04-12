@@ -18,6 +18,11 @@ public:
     void setVelMax(float velMax_degDs) { velMax_degDs_ = velMax_degDs; }
     void setAccMax(float accMax_degDs2) { accMax_degDs2_ = accMax_degDs2; }
 
+    float getVelMax() const { return velMax_degDs_; }
+    float getAccMax() const { return accMax_degDs2_; }
+    float getTargetPan() const { return targetPos_deg_[0]; }
+    float getTargetTilt() const { return targetPos_deg_[1]; }
+
     bool isReady() const { return state_ == READY; }
     bool areStepperDriversConnected() const { return panAxis_.isStepperDriverConnected() && tiltAxis_.isStepperDriverConnected(); }
     bool isMoving() const { return isMoving_; }

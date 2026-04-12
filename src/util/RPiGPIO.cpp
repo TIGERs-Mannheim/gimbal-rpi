@@ -2,7 +2,7 @@
 #include "easylogging++.h"
 #include <optional>
 
-RPiGPIO::RPiGPIO(const char* pName, Direction dir)
+RPiGPIO::RPiGPIO(const char* pName, Direction dir, Pull pull, bool isActiveLow)
 {
     const char* pGpioChipPaths[] = { "/dev/gpiochip0", "/dev/gpiochip1", "/dev/gpiochip2" };
     int result = 0;
@@ -63,8 +63,25 @@ RPiGPIO::RPiGPIO(const char* pName, Direction dir)
         else
         {
             gpiod_line_settings_set_direction(pLineSetting, GPIOD_LINE_DIRECTION_INPUT);
-            gpiod_line_settings_set_bias(pLineSetting, GPIOD_LINE_BIAS_DISABLED);
-            gpiod_line_settings_set_active_low(pLineSetting, false);
+
+            switch(pull)
+            {
+                case PULL_DOWN:
+                    gpiod_line_settings_set_bias(pLineSetting, GPIOD_LINE_BIAS_PULL_DOWN);
+                    break;
+                case PULL_UP:
+                    gpiod_line_settings_set_bias(pLineSetting, GPIOD_LINE_BIAS_PULL_UP);
+                    break;
+                default:
+                    gpiod_line_settings_set_bias(pLineSetting, GPIOD_LINE_BIAS_DISABLED);
+                    break;
+            }
+
+            gpiod_line_settings_set_active_low(pLineSetting, isActiveLow);
+            gpiod_line_settings_set_edge_detection(pLineSetting, GPIOD_LINE_EDGE_BOTH);
+            gpiod_line_settings_set_debounce_period_us(pLineSetting, 100);
+
+            pEventBuffer_ = gpiod_edge_event_buffer_new(0);
         }
 
         auto pLineConfig = gpiod_line_config_new();
@@ -100,6 +117,9 @@ RPiGPIO::RPiGPIO(const char* pName, Direction dir)
 
 RPiGPIO::~RPiGPIO()
 {
+    if(pEventBuffer_)
+        gpiod_edge_event_buffer_free(pEventBuffer_);
+
     if(pLine_)
         gpiod_line_request_release(pLine_);
 
@@ -132,4 +152,26 @@ bool RPiGPIO::read()
     }
 
     return result == 1;
+}
+
+bool RPiGPIO::getNextEvent(Event& event)
+{
+    if(!pEventBuffer_)
+        return false;
+
+    if(gpiod_line_request_wait_edge_events(pLine_, 0) == 1)
+    {
+        if(gpiod_line_request_read_edge_events(pLine_, pEventBuffer_, 1) > 0)
+        {
+            auto pEvent = gpiod_edge_event_buffer_get_event(pEventBuffer_, 0);
+            if(gpiod_edge_event_get_event_type(pEvent) == GPIOD_EDGE_EVENT_RISING_EDGE)
+                event = EVENT_RSING;
+            else
+                event = EVENT_FALLING;
+
+            return true;
+        }
+    }
+
+    return false;
 }

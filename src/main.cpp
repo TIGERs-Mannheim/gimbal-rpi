@@ -6,6 +6,8 @@
 // #include "MotionController.hpp"
 #include "TrackingCamera.hpp"
 #include <eigen3/Eigen/Geometry>
+#include <lvgl.h>
+#include <chrono>
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -16,6 +18,13 @@ void signalHandler(int)
     runFlag = false;
 }
 
+std::chrono::steady_clock::time_point startTime;
+
+uint32_t getMillisecondsSinceStart()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
+}
+
 int main(int, char**)
 {
     el::Configurations defaultConf;
@@ -24,6 +33,9 @@ int main(int, char**)
     el::Loggers::setDefaultConfigurations(defaultConf, true);
 
     LOG(INFO) << "Starting TIGERs Tracking Camera";
+
+    lv_init();
+    lv_tick_set_cb(&getMillisecondsSinceStart);
 
     // Testing Eigen
     // Eigen::Translation3f field_p_base(-1.0f, 5.0f, 1.6f);

@@ -4,7 +4,8 @@
 
 TrackingCamera::TrackingCamera()
 : settings_("/root/ssl_tracking_cam.json"),
-  trackedFrameProvider_(settings_)
+  trackedFrameProvider_(settings_),
+  presenter_(state_, settings_)
 {
     SerialPortOptions options;
     options.baudRate = SerialPortOptions::RATE_115200;
@@ -40,6 +41,11 @@ int TrackingCamera::spinOnce()
         float visibility = ball.has_visibility() ? ball.visibility() : 1.0f;
         // LOG(INFO) << "Ball at " << ball.pos().x() << " " << ball.pos().y() << " " << ball.pos().z() << ", " << visibility;
 
+        state_.ball.pos_m[0] = ball.pos().x();
+        state_.ball.pos_m[1] = ball.pos().y();
+        state_.ball.pos_m[2] = ball.pos().z();
+        state_.ball.visibility = visibility;
+
         if(visibility > 0.5f)
         {
             Eigen::Vector3f field_p_ball(ball.pos().x(), ball.pos().y(), ball.pos().z());
@@ -57,6 +63,15 @@ int TrackingCamera::spinOnce()
         }
     }
 
+    state_.camera.isReady = pMotionController_->isReady();
+    state_.camera.isMoving = pMotionController_->isMoving();
+    state_.camera.pan_deg = pMotionController_->getTargetPan();
+    state_.camera.tilt_deg = pMotionController_->getTargetTilt();
+    state_.camera.velMax_degDs = pMotionController_->getVelMax();
+    state_.camera.accMax_degDs2 = pMotionController_->getAccMax();
+
+    presenter_.spinOnce();
+
     return 0;
 }
 
@@ -65,7 +80,7 @@ void TrackingCamera::getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_
     const auto& camPose = settings_.getCameraPose();
 
     Eigen::Translation3f field_p_base(camPose.positionInFieldFrame_m[0], camPose.positionInFieldFrame_m[1], camPose.positionInFieldFrame_m[2]);
-    float field_rz_base = camPose.yawInFieldFrame_deg * M_PI/180.0f;
+    float field_rz_base = camPose.yawInFieldFrame_deg * M_PI / 180.0f;
 
     Eigen::Affine3f field_T_base = field_p_base * Eigen::AngleAxisf(field_rz_base, Eigen::Vector3f::UnitZ());
     auto base_T_field = field_T_base.inverse();

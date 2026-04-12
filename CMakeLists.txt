@@ -12,14 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH OFF)
-#set(CMAKE_FIND_USE_CMAKE_PATH OFF)
 set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH OFF)
-
-#set(Protobuf_USE_STATIC_LIBS ON CACHE STRING "" FORCE)
-
-#find_package(Protobuf REQUIRED)
-
-#message("protoc: ${Protobuf_PROTOC_EXECUTABLE}")
 
 add_definitions(
     -DELPP_STL_LOGGING
@@ -28,11 +21,24 @@ add_definitions(
 
 add_compile_options(-Wno-psabi)
 
+include(FetchContent)
+
+set(LV_BUILD_CONF_PATH "src/lv_conf.h" CACHE PATH "Custom lvgl config" FORCE)
+set(CONFIG_LV_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+        lvgl
+        GIT_REPOSITORY https://github.com/lvgl/lvgl.git
+        GIT_TAG 85aa60d18b3d5e5588d7b247abf90198f07c8a63 # Release 9.5.0
+)
+
+FetchContent_MakeAvailable(lvgl)
+
 include_directories(
     src
     src/util
-
-#    ${Protobuf_INCLUDE_DIRS}
 )
 
 add_executable(ssl_tracking_cam
@@ -42,6 +48,7 @@ add_executable(ssl_tracking_cam
     src/StepperAxis.cpp
     src/MotionController.cpp
     src/TrackedFrameProvider.cpp
+    src/Presenter.cpp
     src/drv/TMC2209.cpp
     src/util/UDPSyncClient.cpp
     src/util/RPiGPIO.cpp
@@ -54,14 +61,7 @@ add_executable(ssl_tracking_cam
     src/proto/messages_robocup_ssl_detection_tracked.pb.cc
 )
 
-#set_source_files_properties(
-#    src/proto/messages_robocup_ssl_wrapper_tracked.pb.cc
-#    src/proto/messages_robocup_ssl_detection_tracked.pb.cc
-#    PROPERTIES
-#    COMPILE_OPTIONS "-O3;-DNDEBUG;-g0"
-#)
-
-target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard)
+target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl)
 
 install(TARGETS ssl_tracking_cam DESTINATION /usr/local/bin)
 install(FILES systemd/ssl-tracking-cam.service DESTINATION /usr/lib/systemd/system)

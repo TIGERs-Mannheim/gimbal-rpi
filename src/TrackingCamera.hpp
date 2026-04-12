@@ -3,6 +3,8 @@
 #include "Settings.hpp"
 #include "MotionController.hpp"
 #include "TrackedFrameProvider.hpp"
+#include "Presenter.hpp"
+#include "State.hpp"
 #include <eigen3/Eigen/Geometry>
 
 class TrackingCamera
@@ -22,4 +24,7 @@ private:
     Settings settings_;
     std::unique_ptr<MotionController> pMotionController_;
     TrackedFrameProvider trackedFrameProvider_;
+    Presenter presenter_;
+
+    State state_;
 };
