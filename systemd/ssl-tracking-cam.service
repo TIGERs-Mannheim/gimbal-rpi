@@ -1,0 +1,11 @@
+[Unit]
+AssertPathExists=/usr/local/bin/ssl-tracking-cam
+
+[Service]
+ExecStart=/usr/local/bin/ssl-tracking-cam
+Restart=always
+RestartSec=2
+
+[Install]
+Alias=ssl-tracking-cam
+WantedBy=multi-user.target

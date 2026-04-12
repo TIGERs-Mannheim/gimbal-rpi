@@ -62,3 +62,6 @@ add_executable(ssl_tracking_cam
 #)
 
 target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard)
+
+install(TARGETS ssl_tracking_cam DESTINATION /usr/local/bin)
+install(FILES systemd/ssl-tracking-cam.service DESTINATION /usr/lib/systemd/system)
