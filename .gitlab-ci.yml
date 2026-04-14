@@ -9,7 +9,7 @@ build:
   stage: build
   image: registry.gitlab.tigers-mannheim.de/main/tigers-buildroot/ubuntu:rpi-24.04
   script:
-    - cmake -B build -DCMAKE_SYSROOT=/opt/pizero2w-tigers-sysroot -DCMAKE_PREFIX_PATH=/opt/arm-none-linux-gnueabihf .
+    - cmake -B build -DCMAKE_SYSROOT=/opt/pizero2w-tigers-sysroot -DCMAKE_PREFIX_PATH=/opt/arm-none-linux-gnueabihf -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-linux-gnueabihf.toolchain.cmake .
     - cmake --build build -j
   artifacts:
     expire_in: 1 hrs
