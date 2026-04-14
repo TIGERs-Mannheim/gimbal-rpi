@@ -87,13 +87,17 @@ int main(int, char**)
 
     try
     {
+        auto interval = std::chrono::microseconds(1000);
+        auto nextWakeTime = std::chrono::high_resolution_clock::now() + interval;
+
         while(runFlag)
         {
             int result = cam.spinOnce();
             if(result)
                 return result;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_until(nextWakeTime);
+            nextWakeTime += interval;
         }
     }
     catch(std::exception& ex)

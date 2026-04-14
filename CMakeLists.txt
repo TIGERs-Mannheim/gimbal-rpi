@@ -48,14 +48,17 @@ add_executable(ssl_tracking_cam
     src/StepperAxis.cpp
     src/MotionController.cpp
     src/TrackedFrameProvider.cpp
-    src/Presenter.cpp
+    src/View.cpp
     src/drv/TMC2209.cpp
+    src/drv/Joystick.cpp
     src/util/UDPSyncClient.cpp
     src/util/RPiGPIO.cpp
     src/util/easylogging++.cc
     src/util/SerialPort.cpp
     src/util/SerialPortPosix.cpp
     src/util/traj_2order.c
+    src/util/SysFsEntry.cpp
+    src/util/NetworkInterface.cpp
 
     src/proto/messages_robocup_ssl_wrapper_tracked.pb.cc
     src/proto/messages_robocup_ssl_detection_tracked.pb.cc

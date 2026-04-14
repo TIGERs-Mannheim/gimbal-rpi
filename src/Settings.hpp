@@ -35,8 +35,8 @@ public:
     {
         std::array<float, 2> pan_deg = { -90.0f, 90.0f };
         std::array<float, 2> tilt_deg = { -40.0f, 40.0f };
-        float velMax_degDs = 800.0f;
-        float accMax_degDs2 = 4000.0f;
+        float velMax_degDs = 200.0f;
+        float accMax_degDs2 = 400.0f;
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Limits, pan_deg, tilt_deg, velMax_degDs, accMax_degDs2);
     };

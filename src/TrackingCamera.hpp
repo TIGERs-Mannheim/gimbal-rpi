@@ -3,13 +3,21 @@
 #include "Settings.hpp"
 #include "MotionController.hpp"
 #include "TrackedFrameProvider.hpp"
-#include "Presenter.hpp"
-#include "State.hpp"
+#include "View.hpp"
+#include "NetworkInterface.hpp"
+#include "drv/Joystick.hpp"
 #include <eigen3/Eigen/Geometry>
 
 class TrackingCamera
 {
 public:
+    enum Mode
+    {
+        MODE_OFF,
+        MODE_MANUAL,
+        MODE_LIVE,
+    };
+
     TrackingCamera();
     ~TrackingCamera();
 
@@ -18,13 +26,17 @@ public:
 private:
     void getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_deg, float& tilt_deg);
     float limitToRange(float in, std::array<float, 2> limits);
+    void viewEventCallback(View::Event event);
 
     bool initSuccess_ = false;
 
     Settings settings_;
+    NetworkInterface eth0_;
+    SysFsEntry hostname_;
     std::unique_ptr<MotionController> pMotionController_;
     TrackedFrameProvider trackedFrameProvider_;
-    Presenter presenter_;
+    Joystick joystick_;
+    View view_;
 
-    State state_;
+    Mode mode_ = MODE_LIVE;
 };

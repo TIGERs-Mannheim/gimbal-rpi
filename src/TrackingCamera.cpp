@@ -4,8 +4,10 @@
 
 TrackingCamera::TrackingCamera()
 : settings_("/root/ssl_tracking_cam.json"),
+  eth0_("eth0"),
+  hostname_("/proc/sys/kernel/hostname"),
   trackedFrameProvider_(settings_),
-  presenter_(state_, settings_)
+  view_(std::bind(&TrackingCamera::viewEventCallback, this, std::placeholders::_1))
 {
     SerialPortOptions options;
     options.baudRate = SerialPortOptions::RATE_115200;
@@ -31,8 +33,11 @@ TrackingCamera::~TrackingCamera()
 
 int TrackingCamera::spinOnce()
 {
+    View::State viewState;
+
     trackedFrameProvider_.spinOnce();
     pMotionController_->spinOnce();
+    joystick_.spinOnce();
 
     auto pTrackedFrame = trackedFrameProvider_.getLatestTrackedFrame();
     if(pTrackedFrame && pTrackedFrame->lastFrame.balls_size() > 0 && pMotionController_->isReady())
@@ -41,10 +46,9 @@ int TrackingCamera::spinOnce()
         float visibility = ball.has_visibility() ? ball.visibility() : 1.0f;
         // LOG(INFO) << "Ball at " << ball.pos().x() << " " << ball.pos().y() << " " << ball.pos().z() << ", " << visibility;
 
-        state_.ball.pos_m[0] = ball.pos().x();
-        state_.ball.pos_m[1] = ball.pos().y();
-        state_.ball.pos_m[2] = ball.pos().z();
-        state_.ball.visibility = visibility;
+        viewState.ballPos_m[0] = ball.pos().x();
+        viewState.ballPos_m[1] = ball.pos().y();
+        viewState.ballPos_m[2] = ball.pos().z();
 
         if(visibility > 0.5f)
         {
@@ -55,24 +59,91 @@ int TrackingCamera::spinOnce()
 
             getPanTilt(field_p_ball, pan_deg, tilt_deg);
 
-            const auto& limits = settings_.getLimits();
-            pMotionController_->setVelMax(limits.velMax_degDs);
-            pMotionController_->setAccMax(limits.accMax_degDs2);
-
-            pMotionController_->setTargetPos(limitToRange(pan_deg, limits.pan_deg), limitToRange(tilt_deg, limits.tilt_deg));
+            if(mode_ == MODE_LIVE)
+            {
+                const auto& limits = settings_.getLimits();
+                pMotionController_->setVelMax(limits.velMax_degDs);
+                pMotionController_->setAccMax(limits.accMax_degDs2);
+                pMotionController_->setTargetPos(limitToRange(pan_deg, limits.pan_deg), limitToRange(tilt_deg, limits.tilt_deg));
+            }
         }
     }
 
-    state_.camera.isReady = pMotionController_->isReady();
-    state_.camera.isMoving = pMotionController_->isMoving();
-    state_.camera.pan_deg = pMotionController_->getTargetPan();
-    state_.camera.tilt_deg = pMotionController_->getTargetTilt();
-    state_.camera.velMax_degDs = pMotionController_->getVelMax();
-    state_.camera.accMax_degDs2 = pMotionController_->getAccMax();
+    if(mode_ == MODE_MANUAL && pMotionController_->isReady())
+    {
+        pMotionController_->setVelMax(200.0f);
+        pMotionController_->setAccMax(200.0f);
+        pMotionController_->setTargetPos(joystick_.getPan_deg(), joystick_.getTilt_deg());
+    }
 
-    presenter_.spinOnce();
+    viewState.hostname = hostname_.readString();
+    viewState.pan_deg = pMotionController_->getCurrentPan();
+    viewState.tilt_deg = pMotionController_->getCurrentTilt();
+
+    if(pTrackedFrame)
+    {
+        viewState.tracker = pTrackedFrame->name;
+        viewState.trackerIp = pTrackedFrame->ipAddress + ":" + std::to_string(pTrackedFrame->port);
+    }
+    else
+    {
+        viewState.tracker = "None";
+        viewState.trackerIp = "-";
+    }
+
+    if(eth0_.isOnline() && !eth0_.getIp4().empty())
+        viewState.ip = eth0_.getIp4();
+    else
+        viewState.ip = "-";
+
+    if(!pMotionController_->areStepperDriversConnected())
+    {
+        viewState.mode = "HW FAIL";
+    }
+    else if(!pMotionController_->isReady())
+    {
+        viewState.mode = "HOMING";
+    }
+    else
+    {
+        switch(mode_)
+        {
+            case MODE_OFF:
+                viewState.mode = "OFF";
+                break;
+            case MODE_MANUAL:
+                viewState.mode = "MANUAL";
+                break;
+            case MODE_LIVE:
+                viewState.mode = "LIVE";
+                break;
+        }
+    }
+
+    view_.setState(viewState);
+
+    view_.spinOnce();
 
     return 0;
+}
+
+void TrackingCamera::viewEventCallback(View::Event event)
+{
+    switch(event)
+    {
+        case View::EVENT_HOME_CLICKED:
+            pMotionController_->resetHome();
+            break;
+        case View::EVENT_OFF_CLICKED:
+            mode_ = MODE_OFF;
+            break;
+        case View::EVENT_MANUAL_CLICKED:
+            mode_ = MODE_MANUAL;
+            break;
+        case View::EVENT_LIVE_CLICKED:
+            mode_ = MODE_LIVE;
+            break;
+    }
 }
 
 void TrackingCamera::getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_deg, float& tilt_deg)

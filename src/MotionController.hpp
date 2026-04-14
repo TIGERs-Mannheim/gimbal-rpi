@@ -17,11 +17,14 @@ public:
     void setTargetPos(float pan_deg, float tilt_deg);
     void setVelMax(float velMax_degDs) { velMax_degDs_ = velMax_degDs; }
     void setAccMax(float accMax_degDs2) { accMax_degDs2_ = accMax_degDs2; }
+    void resetHome() { state_ = STOP_MOVEMENT; }
 
     float getVelMax() const { return velMax_degDs_; }
     float getAccMax() const { return accMax_degDs2_; }
     float getTargetPan() const { return targetPos_deg_[0]; }
     float getTargetTilt() const { return targetPos_deg_[1]; }
+    float getCurrentPan() const { return currentPos_deg_[0]; }
+    float getCurrentTilt() const { return currentPos_deg_[1]; }
 
     bool isReady() const { return state_ == READY; }
     bool areStepperDriversConnected() const { return panAxis_.isStepperDriverConnected() && tiltAxis_.isStepperDriverConnected(); }
