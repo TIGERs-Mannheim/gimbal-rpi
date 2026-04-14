@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/arm-none-linux-gnueabihf.toolchain.cmake)
+#set(CMAKE_TOOLCHAIN_FILE cmake/arm-none-linux-gnueabihf.toolchain.cmake)
 
 project(ssl_tracking_cam)
 

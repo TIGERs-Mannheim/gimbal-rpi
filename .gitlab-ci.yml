@@ -34,9 +34,9 @@ build-image:
     - rsync -a tigers-buildroot-clone/ tigers-buildroot/
     - cd tigers-buildroot
     - git submodule update --init
-    - rm -rf tigers/package/cam
-    - git clone --branch $CI_COMMIT_REF_NAME --single-branch --recursive https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.tigers-mannheim.de/AndreR/ssl-tracking-cam.git tigers/package/cam
-    - echo -e '\nsource "$BR2_EXTERNAL_TIGERS_PATH/package/cam/Config.in"' >> tigers/Config.in
+    - rm -rf tigers/package/ssl-tracking-cam
+    - git clone --branch $CI_COMMIT_REF_NAME --single-branch --recursive https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.tigers-mannheim.de/AndreR/ssl-tracking-cam.git tigers/package/ssl-tracking-cam
+    - echo -e '\nsource "$BR2_EXTERNAL_TIGERS_PATH/package/ssl-tracking-cam/Config.in"' >> tigers/Config.in
     - echo -e '\nBR2_PACKAGE_SSL_TRACKING_CAM=y' >> tigers/configs/pizero2w_defconfig
     - cat tigers/Config.in
     - cat tigers/configs/pizero2w_defconfig

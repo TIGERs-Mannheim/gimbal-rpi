@@ -1,10 +1,13 @@
 [Unit]
-AssertPathExists=/usr/local/bin/ssl-tracking-cam
+Description=SSL Tracking Camera
+After=network-online.target
+AssertPathExists=/usr/local/bin/ssl_tracking_cam
 
 [Service]
-ExecStart=/usr/local/bin/ssl-tracking-cam
+ExecStart=/usr/local/bin/ssl_tracking_cam
 Restart=always
-RestartSec=2
+RestartSec=3
+TimeoutStopSec=5
 
 [Install]
 Alias=ssl-tracking-cam
