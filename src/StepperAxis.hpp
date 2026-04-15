@@ -12,6 +12,7 @@ public:
     void step(bool dir);
 
     bool isStepperDriverConnected() const { return driver_.isConnected(); }
+    bool isStepperDriverHot() const { return driver_.getDrvStatus().t120; }
 
 private:
     tmc2209::Driver driver_;

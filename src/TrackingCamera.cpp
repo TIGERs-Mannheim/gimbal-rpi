@@ -79,6 +79,7 @@ int TrackingCamera::spinOnce()
     viewState.hostname = hostname_.readString();
     viewState.pan_deg = pMotionController_->getCurrentPan();
     viewState.tilt_deg = pMotionController_->getCurrentTilt();
+    viewState.isHot = pMotionController_->areDriversHot();
 
     if(pTrackedFrame)
     {
@@ -124,6 +125,9 @@ int TrackingCamera::spinOnce()
 
     view_.spinOnce();
 
+    if(quit_)
+        return 1;
+
     return 0;
 }
 
@@ -142,6 +146,9 @@ void TrackingCamera::viewEventCallback(View::Event event)
             break;
         case View::EVENT_LIVE_CLICKED:
             mode_ = MODE_LIVE;
+            break;
+        case View::EVENT_QUIT_CLICKED:
+            quit_ = true;
             break;
     }
 }

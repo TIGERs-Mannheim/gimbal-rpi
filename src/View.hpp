@@ -15,6 +15,7 @@ public:
         EVENT_OFF_CLICKED,
         EVENT_MANUAL_CLICKED,
         EVENT_LIVE_CLICKED,
+        EVENT_QUIT_CLICKED,
     };
 
     struct State
@@ -27,6 +28,7 @@ public:
         std::string mode;
         float pan_deg = 0.0f;
         float tilt_deg = 0.0f;
+        bool isHot = false;
     };
 
     using event_callback_t = std::function<void(Event)>;

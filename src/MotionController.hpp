@@ -28,6 +28,7 @@ public:
     bool isReady() const { return state_ == READY; }
     bool areStepperDriversConnected() const { return panAxis_.isStepperDriverConnected() && tiltAxis_.isStepperDriverConnected(); }
     bool isMoving() const { return isMoving_; }
+    bool areDriversHot() const { return panAxis_.isStepperDriverHot() || tiltAxis_.isStepperDriverHot(); }
 
     static constexpr float MAX_VEL = 800.0f;
     static constexpr float MAX_ACC = 4000.0f;

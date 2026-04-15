@@ -48,6 +48,11 @@ void Driver::spinOnce()
     {
         tLastConnectionCheck_ = tNow;
 
+        if(!isConnected_)
+        {
+            writeReg(REG_NODECONF, (3 << 8)); // Set send delay to 3*8 bit times for multi-node mode
+        }
+
         uint32_t gstat;
         int16_t result = readReg(REG_GSTAT, &gstat);
         if (isConnected_ && result)
@@ -197,18 +202,41 @@ int Driver::readBytes(uint8_t* pData, int length, std::chrono::milliseconds time
 
 void Driver::setup()
 {
+    auto getIfcnt = [&]() -> uint8_t
+    {
+        uint32_t ifCnt;
+        readReg(REG_IFCNT, &ifCnt);
+        return ifCnt & 0xFF;
+    };
+
+    uint8_t ifcnt = getIfcnt();
+
+    auto validateIfcnt = [&](const char* pOp)
+    {
+        uint8_t newCnt = getIfcnt();
+        if(newCnt != ifcnt+1)
+            LOG(WARNING) << "Register write failure during: " << pOp;
+
+        ifcnt = newCnt;
+    };
+
     writeReg(REG_GSTAT, GSTAT_RESET); // clear reset bit
+    validateIfcnt("GSTAT");
 
     // Disable PDN function, microstep resolution defined by MRES register
     uint32_t gconf = GCONF_PDN_DISABLE | GCONF_MSTEP_REG_SELECT;
     writeReg(REG_GCONF, gconf);
-
-    writeReg(REG_NODECONF, (3 << 8)); // Set send delay to 3*8 bit times for multi-node mode
+    validateIfcnt("GCONF");
 
     uint32_t iHoldRun = velDepConf_.ihold << 0 | velDepConf_.irun << 8 | velDepConf_.iholddelay << 16;
     writeReg(REG_IHOLD_IRUN, iHoldRun);
+    validateIfcnt("IHOLD_IRUN");
+
     writeReg(REG_TPOWERDOWN, velDepConf_.tpowerdown);
+    validateIfcnt("TPOWERDOWN");
+
     writeReg(REG_TPWMTHRS, velDepConf_.tpwmthrs);
+    validateIfcnt("TPWMTHRS");
 
     uint32_t chopconf = 0;
     chopconf |= chopConf_.dedge << 29;
@@ -220,6 +248,7 @@ void Driver::setup()
     chopconf |= chopConf_.hstart << 4;
     chopconf |= chopConf_.toff << 0;
     writeReg(REG_CHOPCONF, chopconf);
+    validateIfcnt("CHOPCONF");
 
     uint32_t pwmconf = 0;
     pwmconf |= pwmConf_.pwmlim << 28;
@@ -229,12 +258,14 @@ void Driver::setup()
     pwmconf |= pwmConf_.pwmgrad << 8;
     pwmconf |= pwmConf_.pwmofs << 0;
     writeReg(REG_PWMCONF, pwmconf);
+    validateIfcnt("PWMCONF");
 
     if(pwmConf_.pwmautograd || pwmConf_.pwmautoscale)
     {
         pwmconf |= pwmConf_.pwmautograd << 19;
         pwmconf |= pwmConf_.pwmautoscale << 18;
         writeReg(REG_PWMCONF, pwmconf);
+        validateIfcnt("PWMCONF2");
     }
 }
 

@@ -39,4 +39,5 @@ private:
     View view_;
 
     Mode mode_ = MODE_LIVE;
+    bool quit_ = false;
 };

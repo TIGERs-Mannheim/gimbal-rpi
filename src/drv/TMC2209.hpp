@@ -113,6 +113,8 @@ public:
     void spinOnce();
     bool isConnected() const { return isConnected_; }
 
+    DrvStatus getDrvStatus() const { return drvStatus_; }
+
 private:
     using clock_t = std::chrono::steady_clock;
 
