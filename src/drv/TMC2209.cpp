@@ -200,6 +200,25 @@ int Driver::readBytes(uint8_t* pData, int length, std::chrono::milliseconds time
     return -1;
 }
 
+void Driver::setHighPower(bool highPower)
+{
+    if(highPower)
+    {
+        velDepConf_.irun = 9; // => 0.55A
+        velDepConf_.ihold = 4; // => 0.28A
+        // velDepConf_.irun = 13; // => 0.77A
+        // velDepConf_.ihold = 6; // => 0.38A
+    }
+    else
+    {
+        velDepConf_.irun = 4; // => 0.28A
+        velDepConf_.ihold = 4; // => 0.28A
+    }
+
+    uint32_t iHoldRun = velDepConf_.ihold << 0 | velDepConf_.irun << 8 | velDepConf_.iholddelay << 16;
+    writeReg(REG_IHOLD_IRUN, iHoldRun);
+}
+
 void Driver::setup()
 {
     auto getIfcnt = [&]() -> uint8_t

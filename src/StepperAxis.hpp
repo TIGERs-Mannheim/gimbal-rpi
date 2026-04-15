@@ -13,6 +13,7 @@ public:
 
     bool isStepperDriverConnected() const { return driver_.isConnected(); }
     bool isStepperDriverHot() const { return driver_.getDrvStatus().t120; }
+    void setHighPower(bool enable) { driver_.setHighPower(enable); }
 
 private:
     tmc2209::Driver driver_;

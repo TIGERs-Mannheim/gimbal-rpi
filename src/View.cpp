@@ -209,7 +209,7 @@ void View::lvIndevReadWrapper(lv_indev_t* pIndev, lv_indev_data_t* pData)
         {
             pData->key = key.key;
 
-            LOG(INFO) << "Key " << key.key << " event " << event;
+            // LOG(INFO) << "Key " << key.key << " event " << event;
 
             if(event == RPiGPIO::EVENT_RSING)
                 pData->state = LV_INDEV_STATE_PRESSED;
@@ -228,22 +228,22 @@ void View::lvEventCallback(lv_event_t* pEvent)
 
     if(pSrc == pPresenter->pBtnHome_)
     {
-        LOG(INFO) << "Home pressed";
+        // LOG(INFO) << "Home pressed";
         pPresenter->eventCallback_(EVENT_HOME_CLICKED);
     }
     else if(pSrc == pPresenter->pBtnOff_)
     {
-        LOG(INFO) << "Off pressed";
+        // LOG(INFO) << "Off pressed";
         pPresenter->eventCallback_(EVENT_OFF_CLICKED);
     }
     else if(pSrc == pPresenter->pBtnManual_)
     {
-        LOG(INFO) << "Manual pressed";
+        // LOG(INFO) << "Manual pressed";
         pPresenter->eventCallback_(EVENT_MANUAL_CLICKED);
     }
     else if(pSrc == pPresenter->pBtnLive_)
     {
-        LOG(INFO) << "Live pressed";
+        // LOG(INFO) << "Live pressed";
         pPresenter->eventCallback_(EVENT_LIVE_CLICKED);
     }
 }

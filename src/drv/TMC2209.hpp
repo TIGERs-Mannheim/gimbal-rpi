@@ -115,6 +115,8 @@ public:
 
     DrvStatus getDrvStatus() const { return drvStatus_; }
 
+    void setHighPower(bool highPower);
+
 private:
     using clock_t = std::chrono::steady_clock;
 
