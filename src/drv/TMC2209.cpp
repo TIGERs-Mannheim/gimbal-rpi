@@ -146,7 +146,7 @@ int16_t Driver::readReg(uint8_t reg, uint32_t* pValue)
     *pValue = 0;
 
     // If there was a reception previously we need to wait until TMC releases UART line
-    std::this_thread::sleep_for(std::chrono::microseconds(500));
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
 
     // Prepare TX data and send
     tx[0] = 0x05;

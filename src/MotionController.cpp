@@ -56,7 +56,7 @@ void MotionController::spinOnce()
             if(!isMoving())
             {
                 setVelMax(100);
-                setAccMax(1000);
+                setAccMax(200);
                 setTargetPos(-POS_SPAN[0], -POS_SPAN[1]);
                 state_ = HOMING_GO_TO_LIMIT;
             }
@@ -141,9 +141,9 @@ void MotionController::outputControl()
         TrajSecOrder2D trajectory;
         TrajSecOrder2DCreate(&trajectory, currentPos_deg_, currentVel_degDs_, targetPos, velMax_degDs_, accMax_degDs2_);
 
-        float tEnd_s = TrajSecOrder2DGetTotalTime(&trajectory);
-        if(tEnd_s < 0.01)
-            tEnd_s = 0.01;
+        float tEnd_s = TrajSecOrder2DGetTotalTime(&trajectory) * 1.25;
+        if(tEnd_s < 0.001)
+            tEnd_s = 0.001;
 
         TrajPolynomialQuintic polyTrajPan(currentPos_deg_[0], currentVel_degDs_[0], currentAcc_degDs2_[0], targetPos[0], 0, 0, tEnd_s);
         TrajPolynomialQuintic polyTrajTilt(currentPos_deg_[1], currentVel_degDs_[1], currentAcc_degDs2_[1], targetPos[1], 0, 0, tEnd_s);

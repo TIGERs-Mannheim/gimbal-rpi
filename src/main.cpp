@@ -85,19 +85,40 @@ int main(int, char**)
 
     TrackingCamera cam;
 
+    std::chrono::steady_clock::time_point tLastReport = std::chrono::steady_clock::now();
+    float maxRuntime_us = 0.0f;
+    float runtimeSum_us = 0.0f;
+    float runtimeSamples = 0;
+
     try
     {
-        auto interval = std::chrono::microseconds(1000);
-        auto nextWakeTime = std::chrono::high_resolution_clock::now() + interval;
-
         while(runFlag)
         {
+            auto tStart = std::chrono::high_resolution_clock::now();
+
             int result = cam.spinOnce();
             if(result)
                 return result;
 
-            std::this_thread::sleep_until(nextWakeTime);
-            nextWakeTime += interval;
+            auto tEnd = std::chrono::high_resolution_clock::now();
+
+            float runtime_us = (tEnd - tStart) / std::chrono::microseconds(1);
+            maxRuntime_us = std::max(maxRuntime_us, runtime_us);
+            runtimeSum_us += runtime_us;
+            runtimeSamples++;
+
+            auto tNow = std::chrono::steady_clock::now();
+            if(tNow - tLastReport > std::chrono::seconds(1))
+            {
+                tLastReport = tNow;
+
+                // LOG(INFO) << "Avg: " << runtimeSum_us / runtimeSamples << "us, max: " << maxRuntime_us << "us, samples: " << runtimeSamples;
+                maxRuntime_us = 0.0f;
+                runtimeSum_us = 0.0f;
+                runtimeSamples = 0;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
     catch(std::exception& ex)
