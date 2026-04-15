@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#define FIND_XY_DISTRI_PRECISION 0.0000001f
+#define FIND_XY_DISTRI_PRECISION 0.0000001
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,17 +10,17 @@ extern "C" {
 
 typedef struct
 {
-    float xdd;
-    float xd;
-    float x;
+    double xdd;
+    double xd;
+    double x;
 } TrajSecOrder1DValue;
 
-static void partValues(const TrajSecOrderPart* pParts, uint8_t numParts, float trajTime, TrajSecOrder1DValue* pVal)
+static void partValues(const TrajSecOrderPart* pParts, uint8_t numParts, double trajTime, TrajSecOrder1DValue* pVal)
 {
     uint8_t i;
-    float t;
+    double t;
     const TrajSecOrderPart* pPiece = 0;
-    float tPieceStart = 0;
+    double tPieceStart = 0;
 
     for(i = 0; i < numParts; i++)
     {
@@ -47,25 +47,25 @@ static void partValues(const TrajSecOrderPart* pParts, uint8_t numParts, float t
     pVal->x = pPiece->x0 + pPiece->xd0 * t + 0.5f * pPiece->xdd * t * t;
 }
 
-static float velChangeToZero(float s0, float v0, float aMax)
+static double velChangeToZero(double s0, double v0, double aMax)
 {
-    float a;
+    double a;
 
     if(0 >= v0)
         a = aMax;
     else
         a = -aMax;
 
-    float t = -v0 / a;
-    float s1 = s0 + 0.5f * v0 * t;
+    double t = -v0 / a;
+    double s1 = s0 + 0.5f * v0 * t;
 
     return s1;
 }
 
-static float velTriToZero(float s0, float v0, float v1, float aMax)
+static double velTriToZero(double s0, double v0, double v1, double aMax)
 {
-    float a1;
-    float a2;
+    double a1;
+    double a2;
 
     if(v1 >= v0)
     {
@@ -78,27 +78,27 @@ static float velTriToZero(float s0, float v0, float v1, float aMax)
         a2 = aMax;
     }
 
-    float t1 = (v1 - v0) / a1;
-    float s1 = s0 + 0.5f * (v0 + v1) * t1;
+    double t1 = (v1 - v0) / a1;
+    double s1 = s0 + 0.5f * (v0 + v1) * t1;
 
-    float t2 = -v1 / a2;
-    float s2 = s1 + 0.5f * v1 * t2;
+    double t2 = -v1 / a2;
+    double s2 = s1 + 0.5f * v1 * t2;
 
     return s2;
 }
 
 static void calcTri(TrajSecOrder1D* pTraj,
-                    float s0, float v0, float s2, float a, uint8_t isPos)
+                    double s0, double v0, double s2, double a, uint8_t isPos)
 {
-    float T2;
-    float v1;
-    float T1;
-    float s1;
+    double T2;
+    double v1;
+    double T1;
+    double s1;
 
     if(isPos)
     {
         // + -
-        float sq = (a * (s2 - s0) + 0.5f * v0 * v0) / (a * a);
+        double sq = (a * (s2 - s0) + 0.5f * v0 * v0) / (a * a);
         if(sq > 0.0f)
             T2 = sqrtf(sq);
         else
@@ -110,7 +110,7 @@ static void calcTri(TrajSecOrder1D* pTraj,
     else
     {
         // - +
-        float sq = (a * (s0 - s2) + 0.5f * v0 * v0) / (a * a);
+        double sq = (a * (s0 - s2) + 0.5f * v0 * v0) / (a * a);
         if(sq > 0.0f)
             T2 = sqrtf(sq);
         else
@@ -138,10 +138,10 @@ static void calcTri(TrajSecOrder1D* pTraj,
 }
 
 static void calcTrapz(TrajSecOrder1D* pTraj,
-                      float s0, float v0, float v1, float s3, float aMax)
+                      double s0, double v0, double v1, double s3, double aMax)
 {
-    float a1;
-    float a3;
+    double a1;
+    double a3;
 
     if(v0 > v1)
         a1 = -aMax;
@@ -153,13 +153,13 @@ static void calcTrapz(TrajSecOrder1D* pTraj,
     else
         a3 = aMax;
 
-    float T1 = (v1 - v0) / a1;
-    float v2 = v1;
-    float T3 = -v2 / a3;
+    double T1 = (v1 - v0) / a1;
+    double v2 = v1;
+    double T3 = -v2 / a3;
 
-    float s1 = s0 + 0.5 * (v0 + v1) * T1;
-    float s2 = s3 - 0.5 * v2 * T3;
-    float T2 = (s2 - s1) / v1;
+    double s1 = s0 + 0.5 * (v0 + v1) * T1;
+    double s2 = s3 - 0.5 * v2 * T3;
+    double T2 = (s2 - s1) / v1;
 
     pTraj->parts[0].tEnd = T1;
     pTraj->parts[0].xdd = a1;
@@ -177,13 +177,13 @@ static void calcTrapz(TrajSecOrder1D* pTraj,
     pTraj->parts[2].x0 = s2;
 }
 
-void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, float x0, float xd0, float xTrg, float xdMax, float xddMax)
+void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, double x0, double xd0, double xTrg, double xdMax, double xddMax)
 {
-    float sAtZeroAcc = velChangeToZero(x0, xd0, xddMax);
+    double sAtZeroAcc = velChangeToZero(x0, xd0, xddMax);
 
     if(sAtZeroAcc <= xTrg)
     {
-        float sEnd = velTriToZero(x0, xd0, xdMax, xddMax);
+        double sEnd = velTriToZero(x0, xd0, xdMax, xddMax);
 
         if(sEnd >= xTrg)
         {
@@ -199,7 +199,7 @@ void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, float x0, float xd0, float xTrg
     else
     {
         // even with a full brake we miss xTrg
-        float sEnd = velTriToZero(x0, xd0, -xdMax, xddMax);
+        double sEnd = velTriToZero(x0, xd0, -xdMax, xddMax);
 
         if(sEnd <= xTrg)
         {
@@ -214,7 +214,7 @@ void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, float x0, float xd0, float xTrg
     }
 }
 
-void TrajSecOrder1DValuesAtTime(const TrajSecOrder1D* pTraj, float t, float* pX, float* pXd, float* pXdd)
+void TrajSecOrder1DValuesAtTime(const TrajSecOrder1D* pTraj, double t, double* pX, double* pXd, double* pXdd)
 {
     TrajSecOrder1DValue val;
 
@@ -228,31 +228,31 @@ void TrajSecOrder1DValuesAtTime(const TrajSecOrder1D* pTraj, float t, float* pX,
         *pXdd = val.xdd;
 }
 
-float TrajSecOrder1DGetTotalTime(const TrajSecOrder1D* pTraj)
+double TrajSecOrder1DGetTotalTime(const TrajSecOrder1D* pTraj)
 {
     return pTraj->parts[TRAJ_2ORDER_PARTS - 1].tEnd;
 }
 
-float TrajSecOrder1DGetFinalX(const TrajSecOrder1D* pTraj)
+double TrajSecOrder1DGetFinalX(const TrajSecOrder1D* pTraj)
 {
-    float t = pTraj->parts[2].tEnd - pTraj->parts[1].tEnd;
+    double t = pTraj->parts[2].tEnd - pTraj->parts[1].tEnd;
 
     return pTraj->parts[2].x0 + pTraj->parts[2].xd0 * t + 0.5 * pTraj->parts[2].xdd * t * t;
 }
 
-void TrajSecOrder2DCreate(TrajSecOrder2D* pTraj, const float* pX0, const float* pXd0, const float* pXTrg, float xdMax, float xddMax)
+void TrajSecOrder2DCreate(TrajSecOrder2D* pTraj, const double* pX0, const double* pXd0, const double* pXTrg, double xdMax, double xddMax)
 {
     TrajSecOrder1D* pPosX = (TrajSecOrder1D*)pTraj->x;
     TrajSecOrder1D* pPosY = (TrajSecOrder1D*)pTraj->y;
 
-    float inc = M_PI / 8.0f;
-    float alpha = M_PI / 4.0f;
+    double inc = M_PI / 8.0f;
+    double alpha = M_PI / 4.0f;
 
     // binary search, some iterations (fixed)
     while(inc > FIND_XY_DISTRI_PRECISION)
     {
-        float cA = cosf(alpha);
-        float sA = sinf(alpha);
+        double cA = cosf(alpha);
+        double sA = sinf(alpha);
 
         TrajSecOrder1DCreate(pPosX, pX0[0], pXd0[0], pXTrg[0], xdMax * cA, xddMax * cA);
         TrajSecOrder1DCreate(pPosY, pX0[1], pXd0[1], pXTrg[1], xdMax * sA, xddMax * sA);
@@ -266,7 +266,7 @@ void TrajSecOrder2DCreate(TrajSecOrder2D* pTraj, const float* pX0, const float* 
     }
 }
 
-void TrajSecOrder2DValuesAtTime(const TrajSecOrder2D* pTraj, float t, float* pX, float* pXd, float* pXdd)
+void TrajSecOrder2DValuesAtTime(const TrajSecOrder2D* pTraj, double t, double* pX, double* pXd, double* pXdd)
 {
     TrajSecOrder1DValue x;
     TrajSecOrder1DValue y;
@@ -293,10 +293,10 @@ void TrajSecOrder2DValuesAtTime(const TrajSecOrder2D* pTraj, float t, float* pX,
     }
 }
 
-float TrajSecOrder2DGetTotalTime(const TrajSecOrder2D* pTraj)
+double TrajSecOrder2DGetTotalTime(const TrajSecOrder2D* pTraj)
 {
-    float xEnd = pTraj->x[TRAJ_2ORDER_PARTS - 1].tEnd;
-    float yEnd = pTraj->y[TRAJ_2ORDER_PARTS - 1].tEnd;
+    double xEnd = pTraj->x[TRAJ_2ORDER_PARTS - 1].tEnd;
+    double yEnd = pTraj->y[TRAJ_2ORDER_PARTS - 1].tEnd;
 
     if(xEnd > yEnd)
         return xEnd;

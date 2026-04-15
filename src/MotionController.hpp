@@ -1,7 +1,6 @@
 #pragma once
 
 #include "StepperAxis.hpp"
-#include "traj_2order.h"
 
 #include <thread>
 #include <atomic>
@@ -57,9 +56,10 @@ private:
     std::thread controlThread_;
     std::atomic<bool> runControlThread_ = true;
 
-    TrajSecOrder2D trajectory_;
-    float currentPos_deg_[2] = { 0.0f, 0.0f };
-    float currentVel_degDs_[2] = { 0.0f, 0.0f };
+    double currentPos_deg_[2] = { 0.0, 0.0 };
+    double currentVel_degDs_[2] = { 0.0, 0.0 };
+    double currentAcc_degDs2_[2] = { 0.0, 0.0 };
+
     float velMax_degDs_ = 800.0f;
     float accMax_degDs2_ = 4000.0f;
 

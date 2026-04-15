@@ -59,6 +59,7 @@ add_executable(ssl_tracking_cam
     src/util/traj_2order.c
     src/util/SysFsEntry.cpp
     src/util/NetworkInterface.cpp
+    src/util/TrajPolynomialQuintic.cpp
 
     src/proto/messages_robocup_ssl_wrapper_tracked.pb.cc
     src/proto/messages_robocup_ssl_detection_tracked.pb.cc

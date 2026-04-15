@@ -4,14 +4,14 @@
 
 typedef struct
 {
-    float tEnd;
+    double tEnd;
 
     // xdd(t) = xdd
     // xd(t) = xd0 + xdd*t
     // x(t) = x0 + xd0*t + 0.5*xdd*t^2
-    float xdd;  // x dot dot, control signal
-    float xd0; // x dot initial value
-    float x0; // x initial value
+    double xdd;  // x dot dot, control signal
+    double xd0; // x dot initial value
+    double x0; // x initial value
 } TrajSecOrderPart;
 
 typedef struct
@@ -29,14 +29,14 @@ typedef struct
 extern "C" {
 #endif
 
-void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, float x0, float xd0, float xTrg, float xdMax, float xddMax);
-void TrajSecOrder1DValuesAtTime(const TrajSecOrder1D* pTraj, float t, float* pX, float* pXd, float* pXdd);
-float TrajSecOrder1DGetTotalTime(const TrajSecOrder1D* pTraj);
-float TrajSecOrder1DGetFinalX(const TrajSecOrder1D* pTraj);
+void TrajSecOrder1DCreate(TrajSecOrder1D* pTraj, double x0, double xd0, double xTrg, double xdMax, double xddMax);
+void TrajSecOrder1DValuesAtTime(const TrajSecOrder1D* pTraj, double t, double* pX, double* pXd, double* pXdd);
+double TrajSecOrder1DGetTotalTime(const TrajSecOrder1D* pTraj);
+double TrajSecOrder1DGetFinalX(const TrajSecOrder1D* pTraj);
 
-void TrajSecOrder2DCreate(TrajSecOrder2D* pTraj, const float* pX0, const float* pXd0, const float* pXTrg, float xdMax, float xddMax);
-void TrajSecOrder2DValuesAtTime(const TrajSecOrder2D* pTraj, float t, float* pX, float* pXd, float* pXdd);
-float TrajSecOrder2DGetTotalTime(const TrajSecOrder2D* pTraj);
+void TrajSecOrder2DCreate(TrajSecOrder2D* pTraj, const double* pX0, const double* pXd0, const double* pXTrg, double xdMax, double xddMax);
+void TrajSecOrder2DValuesAtTime(const TrajSecOrder2D* pTraj, double t, double* pX, double* pXd, double* pXdd);
+double TrajSecOrder2DGetTotalTime(const TrajSecOrder2D* pTraj);
 
 #ifdef __cplusplus
 }

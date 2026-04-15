@@ -1,5 +1,7 @@
 #include "MotionController.hpp"
 #include "easylogging++.h"
+#include "traj_2order.h"
+#include "TrajPolynomialQuintic.hpp"
 #include <cmath>
 
 MotionController::MotionController(std::shared_ptr<ISerialPort> pSerialPort)
@@ -112,7 +114,7 @@ void MotionController::outputControl()
 
     while(runControlThread_)
     {
-        float targetPos[2];
+        double targetPos[2];
 
         {
             auto lock = std::unique_lock<std::mutex>(targetPosMutex_);
@@ -123,8 +125,12 @@ void MotionController::outputControl()
                 targetPos_deg_[1] = 0.0f;
                 currentStepPos_[0] = 0.0f;
                 currentStepPos_[1] = 0.0f;
-                currentPos_deg_[0] = 0.0f;
-                currentPos_deg_[1] = 0.0f;
+                currentPos_deg_[0] = 0.0;
+                currentPos_deg_[1] = 0.0;
+                currentVel_degDs_[0] = 0.0;
+                currentVel_degDs_[1] = 0.0;
+                currentAcc_degDs2_[0] = 0.0;
+                currentAcc_degDs2_[1] = 0.0f;
                 zeroPosition_ = false;
             }
 
@@ -132,12 +138,20 @@ void MotionController::outputControl()
             targetPos[1] = targetPos_deg_[1];
         }
 
-        float currentAcc_degDs2[2];
+        TrajSecOrder2D trajectory;
+        TrajSecOrder2DCreate(&trajectory, currentPos_deg_, currentVel_degDs_, targetPos, velMax_degDs_, accMax_degDs2_);
 
-        TrajSecOrder2DCreate(&trajectory_, currentPos_deg_, currentVel_degDs_, targetPos, velMax_degDs_, accMax_degDs2_);
-        TrajSecOrder2DValuesAtTime(&trajectory_, 0.1e-3f, currentPos_deg_, currentVel_degDs_, currentAcc_degDs2);
+        float tEnd_s = TrajSecOrder2DGetTotalTime(&trajectory);
+        if(tEnd_s < 0.01)
+            tEnd_s = 0.01;
 
-        isMoving_ = fabsf(currentPos_deg_[0] - targetPos[0]) > 1.0f/DEG_TO_STEPS || fabsf(currentPos_deg_[1] - targetPos[1]) > 1.0f/DEG_TO_STEPS;
+        TrajPolynomialQuintic polyTrajPan(currentPos_deg_[0], currentVel_degDs_[0], currentAcc_degDs2_[0], targetPos[0], 0, 0, tEnd_s);
+        TrajPolynomialQuintic polyTrajTilt(currentPos_deg_[1], currentVel_degDs_[1], currentAcc_degDs2_[1], targetPos[1], 0, 0, tEnd_s);
+
+        polyTrajPan.getValuesAtTime(0.1e-3, &currentPos_deg_[0], &currentVel_degDs_[0], &currentAcc_degDs2_[0]);
+        polyTrajTilt.getValuesAtTime(0.1e-3, &currentPos_deg_[1], &currentVel_degDs_[1], &currentAcc_degDs2_[1]);
+
+        isMoving_ = fabs(currentPos_deg_[0] - targetPos[0]) > 1.0f/DEG_TO_STEPS || fabs(currentPos_deg_[1] - targetPos[1]) > 1.0f/DEG_TO_STEPS;
 
         int32_t stepTarget[2];
         stepTarget[0] = std::round(currentPos_deg_[0] * DEG_TO_STEPS);
@@ -149,7 +163,7 @@ void MotionController::outputControl()
 
         if(diff[0] > 1 || diff[1] > 1)
         {
-            LOG(WARNING) << "Over stepped! Pan: " << diff[0] << ", tilt: " << diff[1];
+            LOG(WARNING) << "Overstepped! Pan: " << diff[0] << ", tilt: " << diff[1];
         }
 
         if(currentStepPos_[0] < stepTarget[0])
