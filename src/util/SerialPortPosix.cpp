@@ -19,10 +19,13 @@ public:
     int write(const void* buf, int len) override;
     int read(void* buf, int len) override;
     int gpio(SerialPortGPIO gpio, bool level) override;
+    void lock() override { mutex_.lock(); }
+    void unlock() override { mutex_.unlock(); };
 
 private:
     int comFd_;
     struct termios oldtio_;
+    std::mutex mutex_;
 };
 
 SerialPortPosix::~SerialPortPosix()

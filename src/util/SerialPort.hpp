@@ -21,6 +21,21 @@ public:
     virtual int write(const void* buf, int len) =0;
     virtual int read(void* buf, int len) =0;
     virtual int gpio(SerialPortGPIO gpio, bool level) =0;
+
+private:
+    friend class SerialPortLock;
+    virtual void lock() =0;
+    virtual void unlock() =0;
+};
+
+class SerialPortLock
+{
+public:
+    SerialPortLock(std::shared_ptr<ISerialPort> pSerialPort):pSerialPort_(pSerialPort) { pSerialPort->lock(); }
+    ~SerialPortLock() { pSerialPort_->unlock(); }
+
+private:
+    std::shared_ptr<ISerialPort> pSerialPort_;
 };
 
 class SerialPortOptions

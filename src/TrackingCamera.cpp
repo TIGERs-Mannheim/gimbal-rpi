@@ -167,8 +167,8 @@ void TrackingCamera::getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_
 
     // LOG(INFO) << "base_p_ball: " << base_p_ball.x() << ", " << base_p_ball.y() << ", " << base_p_ball.z();
 
-    pan_deg = atan2f(base_p_ball.y(), base_p_ball.x()) * 180.0f / M_PI;
-    tilt_deg = -atan2f(base_p_ball.z(), base_p_ball.x()) * 180.0f / M_PI;
+    pan_deg = -atan2f(base_p_ball.y(), base_p_ball.x()) * 180.0f / M_PI;
+    tilt_deg = -atan2f(base_p_ball.z(), base_p_ball.head(2).norm()) * 180.0f / M_PI;
 
     // LOG(INFO) << "pan: " << pan_deg << ", tilt: " << tilt_deg;
 }

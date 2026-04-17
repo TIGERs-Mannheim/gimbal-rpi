@@ -13,7 +13,7 @@ Settings::Settings(const std::string& filename)
 
 Settings::~Settings()
 {
-    save();
+    // save();
 }
 
 void Settings::load()

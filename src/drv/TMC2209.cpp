@@ -156,6 +156,8 @@ void Driver::writeReg(uint8_t reg, uint32_t value)
     tx[6] = value & 0xFF;
     tx[7] = calcCrc(tx, 8);
 
+    SerialPortLock lock(pSerialPort_);
+
     pSerialPort_->write(tx, 8);
     pSerialPort_->flush();
 }
@@ -164,6 +166,8 @@ int16_t Driver::readReg(uint8_t reg, uint32_t* pValue)
 {
     uint8_t tx[4];
     uint8_t rx[12] = {};
+
+    SerialPortLock lock(pSerialPort_);
 
     // Flush RX data
     while(pSerialPort_->read(rx, 1) > 0)
