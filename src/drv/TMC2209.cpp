@@ -9,9 +9,7 @@ Driver::Driver(std::shared_ptr<ISerialPort> pSerialPort, uint8_t address)
 : pSerialPort_(pSerialPort),
   address_(address)
 {
-    // velDepConf_.irun = 13; // => 0.77A
-    velDepConf_.irun = 9; // => 0.55A
-    // velDepConf_.ihold = 6; // => 0.38A
+    velDepConf_.irun = 4; // => 0.28A
     velDepConf_.ihold = 4; // => 0.28A
     velDepConf_.iholddelay = 1;
     velDepConf_.tpowerdown = 20;
@@ -27,7 +25,6 @@ Driver::Driver(std::shared_ptr<ISerialPort> pSerialPort, uint8_t address)
     chopConf_.toff = 3;
     // chopConf_.toff = 0; // TODO: testing, disable all bridges
 
-    // Note: 12V supply is on the edge, PWM_OFS will go to 255. 15V or more would be better.
     pwmConf_.pwmlim = 12;
     pwmConf_.pwmreg = 8;
     pwmConf_.freewheel = 0;
@@ -36,23 +33,25 @@ Driver::Driver(std::shared_ptr<ISerialPort> pSerialPort, uint8_t address)
     pwmConf_.pwmfreq = 1; // f_pwm = 35.1kHz
     pwmConf_.pwmgrad = 30;
     pwmConf_.pwmofs = 250;
+
+    ioThread_ = std::jthread(std::bind_front(&Driver::ioThread, this));
 }
 
-void Driver::spinOnce()
+void Driver::ioThread(std::stop_token st)
 {
-    using namespace std::chrono_literals;
+    using namespace std::literals;
 
-    auto tNow = clock_t::now();
-
-    if (tNow - tLastConnectionCheck_ > 100ms)
+    while(!st.stop_requested())
     {
-        tLastConnectionCheck_ = tNow;
+        // Wait for trigger or run every 100ms
+        runTrigger_.try_acquire_for(100ms);
 
         if(!isConnected_)
         {
             writeReg(REG_NODECONF, (3 << 8)); // Set send delay to 3*8 bit times for multi-node mode
         }
 
+        // Connect/Disconnect/Setup procedure
         uint32_t gstat;
         int16_t result = readReg(REG_GSTAT, &gstat);
         if (isConnected_ && result)
@@ -76,6 +75,20 @@ void Driver::spinOnce()
             isConnected_ = true;
         }
 
+        // Async high/low power setting
+        if(doSetHighPower_)
+        {
+            doSetHighPower(true);
+            doSetHighPower_ = false;
+        }
+
+        if(doSetLowPower_)
+        {
+            doSetHighPower(false);
+            doSetLowPower_ = false;
+        }
+
+        // Regular reads
         if (isConnected_ && result == 0)
         {
             uint32_t pwmauto;
@@ -86,10 +99,23 @@ void Driver::spinOnce()
                 pwmAuto_.grad = (pwmauto >> 16) & 0xFF;
             }
 
-            readDrvStatus(drvStatus_);
+            DrvStatus drvStatus;
+            readDrvStatus(drvStatus);
+            drvStatus_ = drvStatus;
+
             readPwmScale(pwmScale_);
         }
     }
+}
+
+void Driver::setHighPower(bool highPower)
+{
+    if(highPower)
+        doSetHighPower_ = true;
+    else
+        doSetLowPower_ = true;
+
+    runTrigger_.release();
 }
 
 uint8_t Driver::calcCrc(const uint8_t* pData, uint8_t datagramSize)
@@ -200,7 +226,7 @@ int Driver::readBytes(uint8_t* pData, int length, std::chrono::milliseconds time
     return -1;
 }
 
-void Driver::setHighPower(bool highPower)
+void Driver::doSetHighPower(bool highPower)
 {
     if(highPower)
     {

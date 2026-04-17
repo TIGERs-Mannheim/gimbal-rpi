@@ -65,7 +65,7 @@ add_executable(ssl_tracking_cam
     src/proto/messages_robocup_ssl_detection_tracked.pb.cc
 )
 
-target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl)
+target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl atomic)
 
 install(TARGETS ssl_tracking_cam DESTINATION /usr/local/bin)
 install(FILES systemd/ssl-tracking-cam.service DESTINATION /usr/lib/systemd/system)

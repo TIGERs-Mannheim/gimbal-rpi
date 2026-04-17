@@ -8,12 +8,10 @@ class StepperAxis
 public:
     StepperAxis(std::shared_ptr<ISerialPort> pSerialPort, uint8_t address, const std::string& pinStep, const std::string& pinDir);
 
-    void spinOnce();
     void step(bool dir);
 
-    bool isStepperDriverConnected() const { return driver_.isConnected(); }
-    bool isStepperDriverHot() const { return driver_.getDrvStatus().t120; }
-    void setHighPower(bool enable) { driver_.setHighPower(enable); }
+    tmc2209::Driver& getDriver() { return driver_; }
+    const tmc2209::Driver& getDriver() const { return driver_; }
 
 private:
     tmc2209::Driver driver_;

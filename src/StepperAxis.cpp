@@ -7,11 +7,6 @@ StepperAxis::StepperAxis(std::shared_ptr<ISerialPort> pSerialPort, uint8_t addre
 {
 }
 
-void StepperAxis::spinOnce()
-{
-    driver_.spinOnce();
-}
-
 void StepperAxis::step(bool dir)
 {
     lastStepValue_ = !lastStepValue_;

@@ -28,9 +28,6 @@ MotionController::~MotionController()
 
 void MotionController::spinOnce()
 {
-    panAxis_.spinOnce();
-    tiltAxis_.spinOnce();
-
     if(areStepperDriversConnected())
     {
         enableNotPin_.write(false);
@@ -55,8 +52,8 @@ void MotionController::spinOnce()
         {
             if(!isMoving())
             {
-                panAxis_.setHighPower(false);
-                tiltAxis_.setHighPower(false);
+                panAxis_.getDriver().setHighPower(false);
+                tiltAxis_.getDriver().setHighPower(false);
                 setVelMax(100);
                 setAccMax(200);
                 setTargetPos(-POS_SPAN[0], -POS_SPAN[1]);
@@ -68,8 +65,8 @@ void MotionController::spinOnce()
         {
             if(!isMoving())
             {
-                panAxis_.setHighPower(true);
-                tiltAxis_.setHighPower(true);
+                panAxis_.getDriver().setHighPower(true);
+                tiltAxis_.getDriver().setHighPower(true);
                 setTargetPos(POS_SPAN[0]*-0.5f, POS_SPAN[1]*-0.5f);
                 state_ = HOMING_GO_TO_CENTER;
             }

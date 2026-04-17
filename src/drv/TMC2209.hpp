@@ -2,6 +2,8 @@
 
 #include "SerialPort.hpp"
 #include <chrono>
+#include <thread>
+#include <semaphore>
 
 namespace tmc2209
 {
@@ -110,15 +112,15 @@ class Driver
 public:
     Driver(std::shared_ptr<ISerialPort> pSerialPort, uint8_t address = 0);
 
-    void spinOnce();
     bool isConnected() const { return isConnected_; }
-
     DrvStatus getDrvStatus() const { return drvStatus_; }
 
     void setHighPower(bool highPower);
 
 private:
     using clock_t = std::chrono::steady_clock;
+
+    void ioThread(std::stop_token st);
 
     uint8_t calcCrc(const uint8_t* pData, uint8_t datagramSize);
     void writeReg(uint8_t reg, uint32_t value);
@@ -127,12 +129,18 @@ private:
     void setup();
     void readDrvStatus(DrvStatus& stat);
     void readPwmScale(PwmScale& scale);
+    void doSetHighPower(bool highPower);
 
     std::shared_ptr<ISerialPort> pSerialPort_;
     const uint8_t address_ = 0;
 
+    std::jthread ioThread_;
+    std::binary_semaphore runTrigger_ { 0 };
+
+    std::atomic<bool> doSetHighPower_ = false;
+    std::atomic<bool> doSetLowPower_ = false;
+
     bool isConnected_ = false;
-    clock_t::time_point tLastConnectionCheck_;
 
     uint32_t numRxTimeouts_ = 0;
     uint32_t numRxCrcErrors_ = 0;
@@ -142,7 +150,7 @@ private:
     PwmConf pwmConf_ {};
 
     PwmAuto pwmAuto_ {};
-    DrvStatus drvStatus_ {};
+    std::atomic<DrvStatus> drvStatus_ {};
     PwmScale pwmScale_ {};
 };
 
