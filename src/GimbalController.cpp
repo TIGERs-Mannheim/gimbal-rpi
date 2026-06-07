@@ -137,3 +137,22 @@ void GimbalController::disableMotors()
 {
     transceiver_.send(gimbal_protocol::Message(GIMBAL_MSG_TYPE_TASK_RESET));
 }
+
+void GimbalController::setCalibration(uint8_t axisId, const GimbalServoCalibration& calib)
+{
+    GimbalMsgServoCalibration msg;
+    msg.axisId = axisId;
+    msg.data = calib;
+    msg.isCalibrated = true;
+
+    transceiver_.send(gimbal_protocol::Message(GIMBAL_MSG_TYPE_SERVO_CALIBRATION, msg));
+}
+
+void GimbalController::setConfiguration(uint8_t axisId, const GimbalServoParameters& params)
+{
+    GimbalMsgServoParameters msg;
+    msg.axisId = axisId;
+    msg.data = params;
+
+    transceiver_.send(gimbal_protocol::Message(GIMBAL_MSG_TYPE_SERVO_PARAMETERS, msg));
+}

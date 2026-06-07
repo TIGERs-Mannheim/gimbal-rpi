@@ -26,6 +26,7 @@ public:
 private:
     void getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_deg, float& tilt_deg);
     void handleEvent(View::EventData& event);
+    void sendServoConfig();
 
     bool initSuccess_ = false;
 

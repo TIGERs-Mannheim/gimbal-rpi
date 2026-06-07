@@ -28,6 +28,9 @@ public:
 
     float getCurrentPositionRaw_deg(uint8_t axisId) const;
 
+    void setCalibration(uint8_t axisId, const GimbalServoCalibration& calib);
+    void setConfiguration(uint8_t axisId, const GimbalServoParameters& params);
+
 private:
     using clock_t = std::chrono::steady_clock;
 

@@ -24,6 +24,7 @@ TrackingCamera::TrackingCamera()
 
     pGimbalController_ = std::make_unique<GimbalController>(settings_, pSerialPort);
     pGimbalController_->disableMotors();
+    sendServoConfig();
 
     view_.setPose(settings_.cameraPose.positionInFieldFrame_m, settings_.cameraPose.yawInFieldFrame_deg);
 
@@ -37,6 +38,22 @@ TrackingCamera::~TrackingCamera()
 int TrackingCamera::spinOnce()
 {
     View::State viewState;
+
+    // check if settings changed on disk
+    Settings diskSettings(settings_.filename);
+
+    nlohmann::json jDisk;
+    nlohmann::json jMem;
+    to_json(jDisk, diskSettings);
+    to_json(jMem, settings_);
+
+    if(jDisk != jMem)
+    {
+        LOG(INFO) << "JSON Settings changed. Updating gimbal controller.";
+        from_json(jDisk, settings_);
+
+        sendServoConfig();
+    }
 
     trackedFrameProvider_.spinOnce();
     pGimbalController_->spinOnce();
@@ -138,6 +155,17 @@ int TrackingCamera::spinOnce()
         return 1;
 
     return 0;
+}
+
+void TrackingCamera::sendServoConfig()
+{
+    for(uint8_t i = 0; i < GIMBAL_NUM_AXES; i++)
+    {
+        if(settings_.servoCalibration[i].isCalibrated)
+            pGimbalController_->setCalibration(i, settings_.servoCalibration[i].data);
+
+        pGimbalController_->setConfiguration(i, settings_.servoParameters[i]);
+    }
 }
 
 void TrackingCamera::handleEvent(View::EventData& event)
