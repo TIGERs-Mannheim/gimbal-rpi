@@ -38,7 +38,7 @@ void GimbalController::spinOnce()
                 {
                     state_ = *pMsg;
 
-                    for(size_t i = 0; i < MACHINE_NUM_AXES; i++)
+                    for(size_t i = 0; i < GIMBAL_NUM_AXES; i++)
                     {
                         if(!pMsg->isServoCalibrated[i] && settings_.servoCalibration[i].isCalibrated)
                         {

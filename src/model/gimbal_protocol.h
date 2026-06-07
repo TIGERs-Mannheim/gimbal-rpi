@@ -2,18 +2,20 @@
 
 #include <stdint.h>
 
-enum AxisId
+enum State
 {
-    AXIS_ID_PAN,
-    AXIS_ID_TILT,
-    AXIS_ID_SIZE,
+    GIMBAL_STATE_IDLE,
+    GIMBAL_STATE_MOVING,
+    GIMBAL_STATE_CALIBRATING,
 };
 
 // Machine parameters
-#define MACHINE_NUM_AXES AXIS_ID_SIZE
+#define GIMBAL_NUM_AXES 2
 
-#define MACHINE_AXIS_PAN  AXIS_ID_PAN
-#define MACHINE_AXIS_TILT AXIS_ID_TILT
+#define GIMBAL_AXIS_PAN  0
+#define GIMBAL_AXIS_TILT 1
+
+#define GIMBAL_MAX_MSG_SIZE 256
 
 // List of messages
 #define GIMBAL_MSG_TYPE_STATE             0
@@ -40,24 +42,18 @@ typedef struct
 typedef struct
 {
     uint8_t cpuLoad; // 0 - 100
-
-    struct
-    {
-        uint8_t isActive;
-        uint16_t id;
-        int16_t state;
-    } task;
+    uint8_t state;
 
     struct
     {
         uint16_t supplyVcc_mV;
     } power;
 
-    uint8_t isServoCalibrated[MACHINE_NUM_AXES];
+    uint8_t isServoCalibrated[GIMBAL_NUM_AXES];
 
     struct
     {
-        float encoderPosition_rad[MACHINE_NUM_AXES];
+        float encoderPosition_rad[GIMBAL_NUM_AXES];
     } motion;
 } GimbalMsgState;
 
@@ -69,7 +65,7 @@ typedef struct
 
 typedef struct
 {
-    float target[MACHINE_NUM_AXES];
+    float target[GIMBAL_NUM_AXES];
     float velMax_radDs;
     float accMax_radDs2;
     float jerkMax_radDs3;

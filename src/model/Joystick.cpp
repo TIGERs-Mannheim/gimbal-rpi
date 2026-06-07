@@ -25,10 +25,10 @@ void Joystick::spinOnce()
         pan_deg_ -= speed_ * dt_s;
 
     if(up_.read())
-        tilt_deg_ -= speed_ * dt_s;
+        tilt_deg_ += speed_ * dt_s;
 
     if(down_.read())
-        tilt_deg_ += speed_ * dt_s;
+        tilt_deg_ -= speed_ * dt_s;
 
     const bool pressed = press_.read();
 
