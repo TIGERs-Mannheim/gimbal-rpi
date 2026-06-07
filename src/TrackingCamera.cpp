@@ -47,7 +47,6 @@ int TrackingCamera::spinOnce()
     {
         auto ball = pTrackedFrame->lastFrame.balls(0);
         float visibility = ball.has_visibility() ? ball.visibility() : 1.0f;
-        // LOG(INFO) << "Ball at " << ball.pos().x() << " " << ball.pos().y() << " " << ball.pos().z() << ", " << visibility;
 
         viewState.ballPos_m[0] = ball.pos().x();
         viewState.ballPos_m[1] = ball.pos().y();
@@ -145,9 +144,6 @@ void TrackingCamera::handleEvent(View::EventData& event)
 {
     switch(event.event)
     {
-        case View::EVENT_HOME_CLICKED:
-            // pGimbalController_->resetHome();
-            break;
         case View::EVENT_OFF_CLICKED:
             mode_ = MODE_OFF;
             pGimbalController_->disableMotors();

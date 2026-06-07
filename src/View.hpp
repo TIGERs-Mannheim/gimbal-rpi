@@ -12,7 +12,6 @@ class View
 public:
     enum Event
     {
-        EVENT_HOME_CLICKED,
         EVENT_OFF_CLICKED,
         EVENT_MANUAL_CLICKED,
         EVENT_LIVE_CLICKED,

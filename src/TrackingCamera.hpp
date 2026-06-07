@@ -5,7 +5,7 @@
 #include "TrackedFrameProvider.hpp"
 #include "View.hpp"
 #include "NetworkInterface.hpp"
-#include "drv/Joystick.hpp"
+#include "model/Joystick.hpp"
 #include <eigen3/Eigen/Geometry>
 
 class TrackingCamera

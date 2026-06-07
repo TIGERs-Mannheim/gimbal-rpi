@@ -1,5 +1,5 @@
 # 2-Axis SSL Tracking Camera System
-This application is designed to control a pan-tilt gimbal connected to a Raspberry Pi via TMC2209 stepper motor drivers.
+This application is designed to control a pan-tilt gimbal connected to a Raspberry Pi via a custom driver board.
 
 ## Hardware
 
@@ -7,9 +7,9 @@ This has been tested with the following hardware:
 - Raspberry Pi Zero 2W
 - [PoE Ethernet Hat for Raspberry Pi Zero](https://www.waveshare.com/poe-eth-usb-hub-hat.htm)
 - [1.3" LCD Hat with buttons](https://www.waveshare.com/1.3inch-lcd-hat.htm)
-- Custom board with two [TMC2209](https://www.analog.com/en/products/tmc2209.html) drivers powered with 5V
-- [NEMA 17 1A Stepper Motor](https://www.omc-stepperonline.com/de/nema-17-bipolar-1-8deg-16ncm-22-6oz-in-1a-3-5v-42x42x20mm-4-draehte-17hs08-1004s) for the tilt axis
-- [NEMA 17 1.2A Stepper Motor](https://www.omc-stepperonline.com/de/e-serie-nema-17-bipolar-26ncm-36-82oz-in-1-2a-42x42x30mm-4draehte-w-1m-kabel-verbinder-17he12-1204s) for the pan (yaw) axis
+- Custom board with two [DRV8317H](https://www.ti.com/product/DRV8317) drivers powered with 5V
+- [GB2205 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder) or [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the tilt axis
+- [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the pan (yaw) axis
 
 # Development
 
