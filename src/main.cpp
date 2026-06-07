@@ -118,7 +118,7 @@ int main(int, char**)
                 runtimeSamples = 0;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
     catch(std::exception& ex)
