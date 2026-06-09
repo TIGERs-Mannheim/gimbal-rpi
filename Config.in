@@ -1,4 +1,5 @@
 config BR2_PACKAGE_GIMBAL_RPI
 	bool "gimbal-rpi"
+	select BR2_PACKAGE_BOOST
 	help
 	  TIGERs Tracking Gimbal Application.
