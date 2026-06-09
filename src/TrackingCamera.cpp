@@ -1,28 +1,32 @@
 #include "TrackingCamera.hpp"
 #include "easylogging++.h"
+#include "math_util.hpp"
 #include "proto/messages_robocup_ssl_wrapper_tracked.pb.h"
 
 TrackingCamera::TrackingCamera()
 : settings_("/root/ssl_tracking_cam.json"),
   eth0_("eth0"),
   hostname_("/proc/sys/kernel/hostname"),
-  trackedFrameProvider_(settings_),
-  view_(std::bind(&TrackingCamera::viewEventCallback, this, std::placeholders::_1))
+  trackedFrameProvider_(settings_)
 {
     SerialPortOptions options;
-    options.baudRate = SerialPortOptions::RATE_115200;
+    options.baudRate = SerialPortOptions::RATE_921600;
     options.dataBits = SerialPortOptions::D8;
-    options.parity = SerialPortOptions::NONE;
+    options.parity = SerialPortOptions::EVEN;
     options.stopBits = SerialPortOptions::S1;
 
-    auto pSerialPort = SerialPortFactory::open(settings_.getSerial().port, options);
+    auto pSerialPort = SerialPortFactory::open(settings_.serial.port, options);
     if(!pSerialPort)
     {
-        LOG(ERROR) << "Failed to open serial port: " << settings_.getSerial().port;
+        LOG(ERROR) << "Failed to open serial port: " << settings_.serial.port;
         return;
     }
 
-    pMotionController_ = std::make_unique<MotionController>(pSerialPort);
+    pGimbalController_ = std::make_unique<GimbalController>(settings_, pSerialPort);
+    pGimbalController_->disableMotors();
+    sendServoConfig();
+
+    view_.setPose(settings_.cameraPose.positionInFieldFrame_m, settings_.cameraPose.yawInFieldFrame_deg);
 
     initSuccess_ = true;
 }
@@ -35,16 +39,31 @@ int TrackingCamera::spinOnce()
 {
     View::State viewState;
 
+    // check if settings changed on disk
+    Settings diskSettings(settings_.filename);
+
+    nlohmann::json jDisk;
+    nlohmann::json jMem;
+    to_json(jDisk, diskSettings);
+    to_json(jMem, settings_);
+
+    if(jDisk != jMem)
+    {
+        LOG(INFO) << "JSON Settings changed. Updating gimbal controller.";
+        from_json(jDisk, settings_);
+
+        sendServoConfig();
+    }
+
     trackedFrameProvider_.spinOnce();
-    pMotionController_->spinOnce();
+    pGimbalController_->spinOnce();
     joystick_.spinOnce();
 
     auto pTrackedFrame = trackedFrameProvider_.getLatestTrackedFrame();
-    if(pTrackedFrame && pTrackedFrame->lastFrame.balls_size() > 0 && pMotionController_->isReady())
+    if(pTrackedFrame && pTrackedFrame->lastFrame.balls_size() > 0 && pGimbalController_->isReady())
     {
         auto ball = pTrackedFrame->lastFrame.balls(0);
         float visibility = ball.has_visibility() ? ball.visibility() : 1.0f;
-        // LOG(INFO) << "Ball at " << ball.pos().x() << " " << ball.pos().y() << " " << ball.pos().z() << ", " << visibility;
 
         viewState.ballPos_m[0] = ball.pos().x();
         viewState.ballPos_m[1] = ball.pos().y();
@@ -61,25 +80,24 @@ int TrackingCamera::spinOnce()
 
             if(mode_ == MODE_LIVE)
             {
-                const auto& limits = settings_.getLimits();
-                pMotionController_->setVelMax(limits.velMax_degDs);
-                pMotionController_->setAccMax(limits.accMax_degDs2);
-                pMotionController_->setTargetPos(limitToRange(pan_deg, limits.pan_deg), limitToRange(tilt_deg, limits.tilt_deg));
+                const auto& limits = settings_.limits;
+                pGimbalController_->setTargetPos(limitToRange(pan_deg, limits.pan_deg), limitToRange(tilt_deg, limits.tilt_deg));
             }
         }
     }
 
-    if(mode_ == MODE_MANUAL && pMotionController_->isReady())
+    if(mode_ == MODE_MANUAL && pGimbalController_->isReady())
     {
-        pMotionController_->setVelMax(200.0f);
-        pMotionController_->setAccMax(200.0f);
-        pMotionController_->setTargetPos(joystick_.getPan_deg(), joystick_.getTilt_deg());
+        pGimbalController_->setTargetPos(joystick_.getPan_deg(), joystick_.getTilt_deg());
     }
 
     viewState.hostname = hostname_.readString();
-    viewState.pan_deg = pMotionController_->getCurrentPan();
-    viewState.tilt_deg = pMotionController_->getCurrentTilt();
-    viewState.isHot = pMotionController_->areDriversHot();
+    viewState.pan_deg = pGimbalController_->getCurrentPan_deg();
+    viewState.tilt_deg = pGimbalController_->getCurrentTilt_deg();
+    viewState.limitPan_deg = settings_.limits.pan_deg;
+    viewState.limitTilt_deg = settings_.limits.tilt_deg;
+    viewState.gimbalSupply_V = pGimbalController_->getState().power.supplyVcc_mV * 0.001f;
+    viewState.gimbalCpuLoad = pGimbalController_->getState().cpuLoad * 0.01f;
 
     if(pTrackedFrame)
     {
@@ -97,13 +115,18 @@ int TrackingCamera::spinOnce()
     else
         viewState.ip = "-";
 
-    if(!pMotionController_->areStepperDriversConnected())
+    if(!pGimbalController_->isConnected())
     {
         viewState.mode = "HW FAIL";
     }
-    else if(!pMotionController_->isReady())
+    else if(!pGimbalController_->isReady())
     {
-        viewState.mode = "HOMING";
+        if(pGimbalController_->getState().isServoCalibrated[0])
+            viewState.mode = "NOCAL T";
+        else if(pGimbalController_->getState().isServoCalibrated[1])
+            viewState.mode = "NOCAL P";
+        else
+            viewState.mode = "NOCAL";
     }
     else
     {
@@ -122,8 +145,11 @@ int TrackingCamera::spinOnce()
     }
 
     view_.setState(viewState);
-
     view_.spinOnce();
+
+    View::EventData event;
+    while(view_.getNextEvent(event))
+        handleEvent(event);
 
     if(quit_)
         return 1;
@@ -131,15 +157,24 @@ int TrackingCamera::spinOnce()
     return 0;
 }
 
-void TrackingCamera::viewEventCallback(View::Event event)
+void TrackingCamera::sendServoConfig()
 {
-    switch(event)
+    for(uint8_t i = 0; i < GIMBAL_NUM_AXES; i++)
     {
-        case View::EVENT_HOME_CLICKED:
-            pMotionController_->resetHome();
-            break;
+        if(settings_.servoCalibration[i].isCalibrated)
+            pGimbalController_->setCalibration(i, settings_.servoCalibration[i].data);
+
+        pGimbalController_->setConfiguration(i, settings_.servoParameters[i]);
+    }
+}
+
+void TrackingCamera::handleEvent(View::EventData& event)
+{
+    switch(event.event)
+    {
         case View::EVENT_OFF_CLICKED:
             mode_ = MODE_OFF;
+            pGimbalController_->disableMotors();
             break;
         case View::EVENT_MANUAL_CLICKED:
             mode_ = MODE_MANUAL;
@@ -150,12 +185,47 @@ void TrackingCamera::viewEventCallback(View::Event event)
         case View::EVENT_QUIT_CLICKED:
             quit_ = true;
             break;
+        case View::EVENT_POSE_X_CHANGED:
+            settings_.cameraPose.positionInFieldFrame_m[0] = event.intParam*0.001f;
+            settings_.save();
+            break;
+        case View::EVENT_POSE_Y_CHANGED:
+            settings_.cameraPose.positionInFieldFrame_m[1] = event.intParam*0.001f;
+            settings_.save();
+            break;
+        case View::EVENT_POSE_Z_CHANGED:
+            settings_.cameraPose.positionInFieldFrame_m[2] = event.intParam*0.001f;
+            settings_.save();
+            break;
+        case View::EVENT_POSE_ORIENTATION_CHANGED:
+            settings_.cameraPose.yawInFieldFrame_deg = event.intParam;
+            settings_.save();
+            break;
+        case View::EVENT_CALIB_CLICKED:
+            mode_ = MODE_OFF;
+            pGimbalController_->startCalibration(event.intParam);
+            break;
+        case View::EVENT_LIMIT_PAN_CLICKED:
+            settings_.limits.pan_deg[event.intParam] = pGimbalController_->getCurrentPan_deg();
+            settings_.save();
+            break;
+        case View::EVENT_LIMIT_TILT_CLICKED:
+            settings_.limits.tilt_deg[event.intParam] = pGimbalController_->getCurrentTilt_deg();
+            settings_.save();
+            break;
+        case View::EVENT_ZERO_CLICKED:
+            settings_.cameraPose.axisZeroOffsets_deg[event.intParam] = pGimbalController_->getCurrentPositionRaw_deg(event.intParam);
+            joystick_.setPosition(event.intParam, 0);
+            settings_.save();
+            break;
+        default:
+            break;
     }
 }
 
 void TrackingCamera::getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_deg, float& tilt_deg)
 {
-    const auto& camPose = settings_.getCameraPose();
+    const auto& camPose = settings_.cameraPose;
 
     Eigen::Translation3f field_p_base(camPose.positionInFieldFrame_m[0], camPose.positionInFieldFrame_m[1], camPose.positionInFieldFrame_m[2]);
     float field_rz_base = camPose.yawInFieldFrame_deg * M_PI / 180.0f;
@@ -167,18 +237,8 @@ void TrackingCamera::getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_
 
     // LOG(INFO) << "base_p_ball: " << base_p_ball.x() << ", " << base_p_ball.y() << ", " << base_p_ball.z();
 
-    pan_deg = -atan2f(base_p_ball.y(), base_p_ball.x()) * 180.0f / M_PI;
-    tilt_deg = -atan2f(base_p_ball.z(), base_p_ball.head(2).norm()) * 180.0f / M_PI;
+    pan_deg = atan2f(base_p_ball.y(), base_p_ball.x()) * 180.0f / M_PI;
+    tilt_deg = atan2f(base_p_ball.z(), base_p_ball.head(2).norm()) * 180.0f / M_PI;
 
     // LOG(INFO) << "pan: " << pan_deg << ", tilt: " << tilt_deg;
-}
-
-float TrackingCamera::limitToRange(float in, std::array<float, 2> limits)
-{
-    if(in < limits[0])
-        in = limits[0];
-    else if(in > limits[1])
-        in = limits[1];
-
-    return in;
 }

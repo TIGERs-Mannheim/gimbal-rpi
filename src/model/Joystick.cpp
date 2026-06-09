@@ -13,37 +13,31 @@ void Joystick::spinOnce()
 {
     using namespace std::chrono_literals;
 
+    const auto tNow = std::chrono::high_resolution_clock::now();
+    float dt_s = ((tNow - tLastSpin_) / 1us) * 1e-6f;
+    if(dt_s > 1.0f)
+        dt_s = 1.0f;
+
     if(left_.read())
-        pan_deg_ -= speed_;
+        pan_deg_ += speed_ * dt_s;
 
     if(right_.read())
-        pan_deg_ += speed_;
+        pan_deg_ -= speed_ * dt_s;
 
     if(up_.read())
-        tilt_deg_ -= speed_;
+        tilt_deg_ += speed_ * dt_s;
 
     if(down_.read())
-        tilt_deg_ += speed_;
-
-    if(pan_deg_ > PAN_LIMIT)
-        pan_deg_ = PAN_LIMIT;
-    else if(pan_deg_ < -PAN_LIMIT)
-        pan_deg_ = -PAN_LIMIT;
-
-    if(tilt_deg_ > TILT_LIMIT)
-        tilt_deg_ = TILT_LIMIT;
-    else if(tilt_deg_ < -TILT_LIMIT)
-        tilt_deg_ = -TILT_LIMIT;
+        tilt_deg_ -= speed_ * dt_s;
 
     const bool pressed = press_.read();
-    const auto tNow = std::chrono::high_resolution_clock::now();
 
     if(isPressed_ && !pressed && tNow - tPressStart_ < 200ms)
     {
-        if(speed_ == SPEED_SLOW)
-            speed_ = SPEED_FAST;
+        if(speed_ == SPEED_SLOW_DEG_D_S)
+            speed_ = SPEED_FAST_DEG_D_S;
         else
-            speed_ = SPEED_SLOW;
+            speed_ = SPEED_SLOW_DEG_D_S;
     }
 
     if(!isPressed_ && pressed)
@@ -56,4 +50,14 @@ void Joystick::spinOnce()
         pan_deg_ = 0.0f;
         tilt_deg_ = 0.0f;
     }
+
+    tLastSpin_ = tNow;
+}
+
+void Joystick::setPosition(uint8_t axisId, float pos_deg)
+{
+    if(axisId == 0)
+        pan_deg_ = pos_deg;
+    else
+        tilt_deg_ = pos_deg;
 }

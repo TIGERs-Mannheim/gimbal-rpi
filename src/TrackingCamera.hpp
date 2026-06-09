@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Settings.hpp"
-#include "MotionController.hpp"
+#include "GimbalController.hpp"
 #include "TrackedFrameProvider.hpp"
 #include "View.hpp"
 #include "NetworkInterface.hpp"
-#include "drv/Joystick.hpp"
+#include "model/Joystick.hpp"
 #include <eigen3/Eigen/Geometry>
 
 class TrackingCamera
@@ -25,15 +25,15 @@ public:
 
 private:
     void getPanTilt(const Eigen::Vector3f& field_p_ball, float& pan_deg, float& tilt_deg);
-    float limitToRange(float in, std::array<float, 2> limits);
-    void viewEventCallback(View::Event event);
+    void handleEvent(View::EventData& event);
+    void sendServoConfig();
 
     bool initSuccess_ = false;
 
     Settings settings_;
     NetworkInterface eth0_;
     SysFsEntry hostname_;
-    std::unique_ptr<MotionController> pMotionController_;
+    std::unique_ptr<GimbalController> pGimbalController_;
     TrackedFrameProvider trackedFrameProvider_;
     Joystick joystick_;
     View view_;

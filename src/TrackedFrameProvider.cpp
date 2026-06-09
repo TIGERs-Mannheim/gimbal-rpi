@@ -3,7 +3,7 @@
 
 TrackedFrameProvider::TrackedFrameProvider(Settings& settings)
 : settings_(settings),
-  trackerClient_(settings.getNetwork().trackerIp, settings.getNetwork().trackerPort)
+  trackerClient_(settings.network.trackerIp, settings.network.trackerPort)
 {
 }
 
@@ -31,7 +31,7 @@ const TrackedFrameProvider::Source* TrackedFrameProvider::getLatestTrackedFrame(
     if(sources_.empty())
         return nullptr;
 
-    auto preferredSrc = std::ranges::find_if(sources_, [&](const auto& s){ return s.name == settings_.getNetwork().prefferedTrackerSource; });
+    auto preferredSrc = std::ranges::find_if(sources_, [&](const auto& s){ return s.name == settings_.network.preferedTrackerSource; });
     if(preferredSrc == sources_.end())
     {
         return &sources_[0];

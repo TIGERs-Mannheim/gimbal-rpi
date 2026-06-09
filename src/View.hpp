@@ -5,17 +5,33 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <queue>
 
 class View
 {
 public:
     enum Event
     {
-        EVENT_HOME_CLICKED,
         EVENT_OFF_CLICKED,
         EVENT_MANUAL_CLICKED,
         EVENT_LIVE_CLICKED,
         EVENT_QUIT_CLICKED,
+        EVENT_CALIB_CLICKED,
+        EVENT_LIMIT_PAN_CLICKED,
+        EVENT_LIMIT_TILT_CLICKED,
+        EVENT_ZERO_CLICKED,
+        EVENT_POSE_X_CHANGED,
+        EVENT_POSE_Y_CHANGED,
+        EVENT_POSE_Z_CHANGED,
+        EVENT_POSE_ORIENTATION_CHANGED,
+    };
+
+    struct EventData
+    {
+        Event event;
+        int intParam = 0;
+        float floatParam = 0;
+        float floatParam2 = 0;
     };
 
     struct State
@@ -28,23 +44,34 @@ public:
         std::string mode;
         float pan_deg = 0.0f;
         float tilt_deg = 0.0f;
-        bool isHot = false;
+        std::array<float, 2> limitPan_deg = { -90.0f, 90.0f };
+        std::array<float, 2> limitTilt_deg = { -40.0f, 40.0f };
+        float gimbalSupply_V = 0.0f;
+        float gimbalCpuLoad = 0.0f;
     };
 
-    using event_callback_t = std::function<void(Event)>;
-
-    View(event_callback_t eventCallback);
+    View();
 
     void spinOnce();
     void setState(const State& state);
+
+    void setPose(std::array<float, 3> positionInFieldFrame_m, float yawInFieldFrame_deg);
+
+    bool getNextEvent(EventData& event);
 
 private:
     static void lvIndevReadWrapper(lv_indev_t* pIndev, lv_indev_data_t* pData);
     static void lvEventCallback(lv_event_t* pEvent);
 
-    lv_obj_t* createStatusScreen();
+    lv_obj_t* createHeader(lv_obj_t* pParent);
+    lv_obj_t* createFooter(lv_obj_t* pParent);
+    void setupScreen();
 
-    event_callback_t eventCallback_;
+    lv_obj_t* createStatusTile();
+    lv_obj_t* createSetupTile();
+    lv_obj_t* createPoseTile();
+
+    void loadTile(uint32_t tileIndex);
 
     struct MappedKey
     {
@@ -54,21 +81,62 @@ private:
 
     std::vector<MappedKey> keys_;
 
+    lv_indev_t* pInputDevice_;
+    bool isEnterPressed_ = false;
+
     lv_style_t style_ {};
     lv_style_t styleSmall_ {};
     lv_style_t styleFocused_ {};
+    lv_style_t styleSpinboxCursor_ {};
+    lv_style_t styleSpinboxMain_ {};
 
-    lv_obj_t* pLblHostname_;
-    lv_obj_t* pLblOwnIp_;
-    lv_obj_t* pLblTracker_;
-    lv_obj_t* pLblTrackerIp_;
-    lv_obj_t* pLblBallPos_;
+    lv_obj_t* pBtnNavLeft_;
+    lv_obj_t* pLblTileName_;
+    lv_obj_t* pBtnNavRight_;
+
+    lv_obj_t* pTileView_;
+    uint32_t tileIndex_ = 0;
+
     lv_obj_t* pLblMode_;
     lv_obj_t* pLblPan_;
     lv_obj_t* pLblTilt_;
 
-    lv_obj_t* pBtnHome_;
-    lv_obj_t* pBtnOff_;
-    lv_obj_t* pBtnManual_;
-    lv_obj_t* pBtnLive_;
+    struct TileData
+    {
+        const char* pName = nullptr;
+        lv_group_t* pInputGroup = nullptr;
+    };
+
+    std::vector<std::unique_ptr<EventData>> eventData_;
+    std::queue<EventData> eventQueue_;
+
+    struct
+    {
+        TileData data;
+
+        lv_obj_t* pLblHostname;
+        lv_obj_t* pLblOwnIp;
+        lv_obj_t* pLblTracker;
+        lv_obj_t* pLblTrackerIp;
+        lv_obj_t* pLblBallPos;
+        lv_obj_t* pLblGimbal;
+    } status_;
+
+    struct
+    {
+        TileData data;
+
+        lv_obj_t* pLblPanRange;
+        lv_obj_t* pLblTiltRange;
+    } setup_;
+
+    struct
+    {
+        TileData data;
+
+        lv_obj_t* pBoxX;
+        lv_obj_t* pBoxY;
+        lv_obj_t* pBoxZ;
+        lv_obj_t* pBoxYaw;
+    } pose_;
 };
