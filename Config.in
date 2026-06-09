@@ -1,4 +1,4 @@
-config BR2_PACKAGE_SSL_TRACKING_CAM
-	bool "ssl-tracking-cam"
+config BR2_PACKAGE_GIMBAL_RPI
+	bool "gimbal-rpi"
 	help
-	  SSL Tracking Camera Application.
+	  TIGERs Tracking Gimbal Application.

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ssl_tracking_cam.iml" filepath="$PROJECT_DIR$/.idea/ssl_tracking_cam.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/gimbal_rpi.iml" filepath="$PROJECT_DIR$/.idea/gimbal_rpi.iml" />
     </modules>
   </component>
 </project>

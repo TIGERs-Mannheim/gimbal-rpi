@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="movement-tester" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-    <module name="ssl_tracking_cam" />
+    <module name="gimbal_rpi" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
