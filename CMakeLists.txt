@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 
 #set(CMAKE_TOOLCHAIN_FILE cmake/arm-none-linux-gnueabihf.toolchain.cmake)
 
-project(ssl_tracking_cam)
+project(gimbal_rpi)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -29,9 +29,9 @@ set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
-        lvgl
-        GIT_REPOSITORY https://github.com/lvgl/lvgl.git
-        GIT_TAG 85aa60d18b3d5e5588d7b247abf90198f07c8a63 # Release 9.5.0
+    lvgl
+    GIT_REPOSITORY https://github.com/lvgl/lvgl.git
+    GIT_TAG 85aa60d18b3d5e5588d7b247abf90198f07c8a63 # Release 9.5.0
 )
 
 FetchContent_MakeAvailable(lvgl)
@@ -41,7 +41,7 @@ include_directories(
     src/util
 )
 
-add_executable(ssl_tracking_cam
+add_executable(${PROJECT_NAME}
     src/main.cpp
     src/TrackingCamera.cpp
     src/Settings.cpp
@@ -66,7 +66,7 @@ add_executable(ssl_tracking_cam
     src/proto/messages_robocup_ssl_detection_tracked.pb.cc
 )
 
-target_link_libraries(ssl_tracking_cam gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl atomic)
+target_link_libraries(${PROJECT_NAME} gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl atomic)
 
-install(TARGETS ssl_tracking_cam DESTINATION /usr/local/bin)
-install(FILES systemd/ssl-tracking-cam.service DESTINATION /usr/lib/systemd/system)
+install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
+install(FILES systemd/gimbal-rpi.service DESTINATION /usr/lib/systemd/system)

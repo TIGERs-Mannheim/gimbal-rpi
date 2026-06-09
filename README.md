@@ -1,26 +1,29 @@
-# 2-Axis SSL Tracking Camera System
+# TIGERs Mannheim 2-Axis Gimbal System
+
 This application is designed to control a pan-tilt gimbal connected to a Raspberry Pi via a custom driver board.
 
 ## Hardware
 
 This has been tested with the following hardware:
-- Raspberry Pi Zero 2W
+- Raspberry Pi Zero (incl. W and 2W models)
 - [PoE Ethernet Hat for Raspberry Pi Zero](https://www.waveshare.com/poe-eth-usb-hub-hat.htm)
 - [1.3" LCD Hat with buttons](https://www.waveshare.com/1.3inch-lcd-hat.htm)
-- Custom board with two [DRV8317H](https://www.ti.com/product/DRV8317) drivers powered with 5V
+- Custom board with two [DRV8317H](https://www.ti.com/product/DRV8317) drivers powered with 5V, see gimbal-hardware repository for details
 - [GB2205 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder) or [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the tilt axis
 - [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the pan (yaw) axis
 
 # Development
 
-## How to build
+The project is based on CMake and hence should be able to build natively on a Raspberry Pi. Note that this has not been tested. Only the cross-compilation approach below was tested.
 
-Build is based on cmake. The applications are cross-compiled on a standard x64 computer.
+## How to cross-compile
+
+Build is based on cmake. The application can be cross-compiled on a standard x64 computer.
 
 You need:
 - The sysroot of your target. Available as artifact of the tigers-buildroot project. It contains all the system libraries and files.
     - If you have a local tigers-buildroot setup the required subfolder is `tigers-buildroot/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot`
-    - Alternatively, you may download the sysroot from the tigers-buildroot CI [here](https://gitlab.tigers-mannheim.de/main/tigers-buildroot/-/pipelines). Download the pizero2w-tigers-sysroot artifact.
+    - Alternatively, you may download the sysroot from the tigers-buildroot CI [here](https://gitlab.tigers-mannheim.de/main/tigers-buildroot/-/pipelines). Download the gimbal_pizero-sysroot artifact.
 - A toolchain:
     - For Linux: [here](https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-linux-gnueabihf.tar.xz)
     - For Windows: [here](https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-linux-gnueabihf.zip)
@@ -47,8 +50,8 @@ You may need to adjust your sysroot and toolchain path.
 1. Install CLion and clone the project
 1. Go to Settings => Appearance & Behavior => Path Variables and add:
     1. Name: TIGERS_RPI_TOOLCHAIN, Value: root path of your cross-compiler toolchain
-    1. Name: TIGERS_PIZERO2W_SYSROOT, Value: root path of your target's sysroot
+    1. Name: TIGERS_GIMBAL_PIZERO_SYSROOT, Value: root path of your target's sysroot
 1. Go to Settings => Tools => SSH Configurations and add a configuration:
-    1. Host: tigerspizero2w.local, User: root, PW: root
+    1. Host: tigersgimbal.local, User: root, PW: root
 1. You can now compile the application locally and execute it remotely
 1. If the above does not work after setting the paths restart CLion and delete the build folder, then rebuild.

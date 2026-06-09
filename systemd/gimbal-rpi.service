@@ -1,0 +1,14 @@
+[Unit]
+Description=TIGERs Gimbal
+After=network-online.target
+AssertPathExists=/usr/local/bin/gimbal_rpi
+
+[Service]
+ExecStart=/usr/local/bin/gimbal_rpi
+Restart=always
+RestartSec=3
+TimeoutStopSec=5
+
+[Install]
+Alias=gimbal.service
+WantedBy=multi-user.target
