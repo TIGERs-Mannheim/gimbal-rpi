@@ -42,17 +42,21 @@ build-image-pizero:
     - cat tigers/configs/gimbal_pizero_defconfig
     - export BR2_CCACHE_DIR="$PWD/buildroot-ccache"
     - cd tigers
+    - make gimbal_pizero_initramfs_defconfig
+    - cd output/gimbal_pizero_initramfs
+    - make clean
+    - make -j8
+    - cd ../..
     - make gimbal_pizero_defconfig
     - cd output/gimbal_pizero
     - make clean
-    - make -j6
+    - make -j8
     - cd ../../../..
     - 'echo "gimbal-rpi: $CI_COMMIT_REF_NAME ($CI_COMMIT_SHA)" >> versions'
     - mkdir -p gimbal-rpi
-    - mv tigers-buildroot/tigers/output/gimbal_pizero/images/sdcard.img gimbal-rpi/sdcard.img
     - mv tigers-buildroot/tigers/output/gimbal_pizero/images/update.squashfs gimbal-rpi/update.squashfs
   artifacts:
-    name: gimbal-rpi-image-$CI_JOB_NAME-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
+    name: gimbal-rpi-update-$CI_JOB_NAME-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
     paths:
       - gimbal-rpi
       - versions
