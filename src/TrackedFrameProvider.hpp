@@ -2,11 +2,13 @@
 
 #include "util/UDPSyncClient.hpp"
 #include "Settings.hpp"
-#include "proto/messages_robocup_ssl_wrapper_tracked.pb.h"
+#include "protobuf-c/messages_robocup_ssl_wrapper_tracked.pb-c.h"
 
 class TrackedFrameProvider
 {
 public:
+    using TrackerWrapperPacketUniquePtr = std::unique_ptr<TrackerWrapperPacket, void(*)(TrackerWrapperPacket*)>;
+
     struct Source
     {
         std::string ipAddress;
@@ -14,10 +16,11 @@ public:
         std::string uuid;
         std::string name;
         std::chrono::steady_clock::time_point tLastReception;
-
-        TrackedFrame lastFrame;
+        TrackerWrapperPacketUniquePtr pLastPacket { nullptr, [](TrackerWrapperPacket* p) {} };
 
         bool operator==(const Source& rhs) const { return ipAddress == rhs.ipAddress && port == rhs.port && uuid == rhs.uuid && name == rhs.name; }
+
+        auto getTrackedFrame() const { return pLastPacket ? *pLastPacket->tracked_frame : (TrackedFrame)TRACKED_FRAME__INIT; }
     };
 
     TrackedFrameProvider(Settings& settings);

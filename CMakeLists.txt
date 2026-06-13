@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
 
-#set(CMAKE_TOOLCHAIN_FILE cmake/arm-none-linux-gnueabihf.toolchain.cmake)
-
 project(gimbal_rpi)
 
 set(CMAKE_C_STANDARD 11)
@@ -10,6 +8,8 @@ set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_FLAGS_DEBUG "-Og -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g")
 
 set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH OFF)
 set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH OFF)
@@ -62,11 +62,12 @@ add_executable(${PROJECT_NAME}
     src/util/crc.c
     src/util/math_util.cpp
 
-    src/proto/messages_robocup_ssl_wrapper_tracked.pb.cc
-    src/proto/messages_robocup_ssl_detection_tracked.pb.cc
+    src/protobuf-c/protobuf-c.c
+    src/protobuf-c/messages_robocup_ssl_wrapper_tracked.pb-c.c
+    src/protobuf-c/messages_robocup_ssl_detection_tracked.pb-c.c
 )
 
-target_link_libraries(${PROJECT_NAME} gpiod protobuf absl_log_internal_check_op absl_log_internal_message absl_log_internal_nullguard lvgl atomic)
+target_link_libraries(${PROJECT_NAME} gpiod lvgl)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
 install(FILES systemd/gimbal-rpi.service DESTINATION /usr/lib/systemd/system)

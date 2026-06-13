@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="gimbal_rpi" type="com.jetbrains.cidr.remote.gdbserver.type" factoryName="com.jetbrains.cidr.remote.gdbserver.factory" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="gimbal_rpi" TARGET_NAME="gimbal_rpi" CONFIG_NAME="Release" version="1" RUN_TARGET_PROJECT_NAME="gimbal_rpi" RUN_TARGET_NAME="gimbal_rpi">
-    <custom-gdb-server version="1" gdb-connect="tigersgimbal:1234" executable="" warmup-ms="0" download-type="ALWAYS" sshConfigName="root@tigersgimbal:22 password" uploadFile="/root/gimbal_rpi" defaultGdbServerArgs=":1234 /root/gimbal_rpi">
+    <custom-gdb-server version="1" gdb-connect="tigersgimbal:1234" executable="" warmup-ms="0" download-type="ALWAYS" sshConfigName="root@tigersgimbal:22" uploadFile="/root/gimbal_rpi" defaultGdbServerArgs=":1234 /root/gimbal_rpi">
       <debugger kind="GDB" isBundled="true" />
     </custom-gdb-server>
     <method v="2">

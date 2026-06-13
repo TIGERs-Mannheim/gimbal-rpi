@@ -21,9 +21,7 @@ void TrackedFrameProvider::spinOnce()
     // Prune sources on timeout
     auto tNow = std::chrono::steady_clock::now();
     std::erase_if(sources_, [&](const auto& s)
-    {
-        return tNow - s.tLastReception > std::chrono::seconds(2);
-    });
+                  { return tNow - s.tLastReception > std::chrono::seconds(2); });
 }
 
 const TrackedFrameProvider::Source* TrackedFrameProvider::getLatestTrackedFrame() const
@@ -31,7 +29,8 @@ const TrackedFrameProvider::Source* TrackedFrameProvider::getLatestTrackedFrame(
     if(sources_.empty())
         return nullptr;
 
-    auto preferredSrc = std::ranges::find_if(sources_, [&](const auto& s){ return s.name == settings_.network.preferedTrackerSource; });
+    auto preferredSrc = std::ranges::find_if(sources_, [&](const auto& s)
+                                             { return s.name == settings_.network.preferedTrackerSource; });
     if(preferredSrc == sources_.end())
     {
         return &sources_[0];
@@ -42,33 +41,35 @@ const TrackedFrameProvider::Source* TrackedFrameProvider::getLatestTrackedFrame(
 
 void TrackedFrameProvider::handleMessage(const NetMessage& msg)
 {
-    TrackerWrapperPacket trackerPacket;
-
     // Parse packet and validate that source name and tracked frame are set
-    if(!trackerPacket.ParseFromArray(msg.data.data(), msg.data.size()))
+    auto pUnpacked = tracker_wrapper_packet__unpack(nullptr, msg.data.size(), msg.data.data());
+    if(!pUnpacked)
     {
-        LOG(ERROR) << "Failed to parse tracker packet: " << trackerPacket.DebugString();
+        LOG(ERROR) << "Failed to parse tracker packet with " << msg.data.size() << "B from " << msg.address.to_string() << ":" << msg.port;
         return;
     }
 
-    if(!trackerPacket.has_source_name() || !trackerPacket.has_tracked_frame())
+    // Make unique_ptr with custom deallocator for proper cleanup
+    TrackerWrapperPacketUniquePtr pTrackerPacket(pUnpacked, [](TrackerWrapperPacket* p){tracker_wrapper_packet__free_unpacked(p, nullptr); });
+
+    if(!pTrackerPacket->source_name || !pTrackerPacket->tracked_frame)
         return;
 
     // Check if this source already exists. If not, create it.
     auto srcIter = std::ranges::find_if(sources_, [&](const auto& s)
-                                        { return s.ipAddress == msg.address.to_string() && s.port == msg.port && s.uuid == trackerPacket.uuid() && s.name == trackerPacket.source_name(); });
+                                        { return s.ipAddress == msg.address.to_string() && s.port == msg.port && s.uuid == std::string(pTrackerPacket->uuid) && s.name == std::string(pTrackerPacket->source_name); });
 
     if(srcIter == sources_.end())
     {
-        LOG(INFO) << "New source: " << trackerPacket.source_name();
+        LOG(INFO) << "New source: " << pTrackerPacket->source_name;
 
         Source src;
         src.ipAddress = msg.address.to_string();
         src.port = msg.port;
-        src.uuid = trackerPacket.uuid();
-        src.name = trackerPacket.source_name();
+        src.uuid = pTrackerPacket->uuid;
+        src.name = pTrackerPacket->source_name;
 
-        sources_.push_back(src);
+        sources_.push_back(std::move(src));
         srcIter = --sources_.end();
     }
 
@@ -76,13 +77,13 @@ void TrackedFrameProvider::handleMessage(const NetMessage& msg)
     auto& src = *srcIter;
     src.tLastReception = std::chrono::steady_clock::now();
 
-    src.lastFrame = trackerPacket.tracked_frame();
-
-    // LOG(INFO) << "Tracket packet: " << trackerPacket.uuid() << ", src: " << trackerPacket.source_name();
+    // LOG(INFO) << "Tracket packet: " << pTrackerPacket->uuid << ", src: " << pTrackerPacket->source_name;
     //
-    // if(trackerPacket.has_tracked_frame())
+    // if(pTrackerPacket->tracked_frame)
     // {
-    //     const auto& frame = trackerPacket.tracked_frame();
-    //     LOG(INFO) << frame.frame_number() << ", " << frame.timestamp() << ", " << frame.balls_size();
+    //     const auto& frame = *pTrackerPacket->tracked_frame;
+    //     LOG(INFO) << frame.frame_number << ", " << frame.timestamp << ", " << frame.n_balls;
     // }
+
+    src.pLastPacket = std::move(pTrackerPacket);
 }

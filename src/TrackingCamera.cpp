@@ -1,7 +1,6 @@
 #include "TrackingCamera.hpp"
 #include "easylogging++.h"
 #include "math_util.hpp"
-#include "proto/messages_robocup_ssl_wrapper_tracked.pb.h"
 
 TrackingCamera::TrackingCamera()
 : settings_("/root/ssl_tracking_cam.json"),
@@ -39,6 +38,9 @@ int TrackingCamera::spinOnce()
 {
     View::State viewState;
 
+    // TODO: add simple profiling
+
+    // TODO: takes around 2ms => move to thread
     // check if settings changed on disk
     Settings diskSettings(settings_.filename);
 
@@ -60,18 +62,18 @@ int TrackingCamera::spinOnce()
     joystick_.spinOnce();
 
     auto pTrackedFrame = trackedFrameProvider_.getLatestTrackedFrame();
-    if(pTrackedFrame && pTrackedFrame->lastFrame.balls_size() > 0 && pGimbalController_->isReady())
+    if(pTrackedFrame && pTrackedFrame->getTrackedFrame().n_balls > 0 && pGimbalController_->isReady())
     {
-        auto ball = pTrackedFrame->lastFrame.balls(0);
-        float visibility = ball.has_visibility() ? ball.visibility() : 1.0f;
+        auto pBall = pTrackedFrame->getTrackedFrame().balls[0];
+        float visibility = pBall->has_visibility ? pBall->visibility : 1.0f;
 
-        viewState.ballPos_m[0] = ball.pos().x();
-        viewState.ballPos_m[1] = ball.pos().y();
-        viewState.ballPos_m[2] = ball.pos().z();
+        viewState.ballPos_m[0] = pBall->pos->x;
+        viewState.ballPos_m[1] = pBall->pos->y;
+        viewState.ballPos_m[2] = pBall->pos->z;
 
         if(visibility > 0.5f)
         {
-            Eigen::Vector3f field_p_ball(ball.pos().x(), ball.pos().y(), ball.pos().z());
+            Eigen::Vector3f field_p_ball(pBall->pos->x, pBall->pos->y, pBall->pos->z);
 
             float pan_deg;
             float tilt_deg;
@@ -144,8 +146,8 @@ int TrackingCamera::spinOnce()
         }
     }
 
-    view_.setState(viewState);
-    view_.spinOnce();
+    view_.setState(viewState); // 300us
+    view_.spinOnce(); // 10ms => move to thread
 
     View::EventData event;
     while(view_.getNextEvent(event))
