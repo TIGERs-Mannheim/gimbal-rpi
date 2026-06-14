@@ -1,16 +1,7 @@
 # TIGERs Mannheim 2-Axis Gimbal System
 
 This application is designed to control a pan-tilt gimbal connected to a Raspberry Pi via a custom driver board.
-
-## Hardware
-
-This has been tested with the following hardware:
-- Raspberry Pi Zero (incl. W and 2W models)
-- [PoE Ethernet Hat for Raspberry Pi Zero](https://www.waveshare.com/poe-eth-usb-hub-hat.htm)
-- [1.3" LCD Hat with buttons](https://www.waveshare.com/1.3inch-lcd-hat.htm)
-- Custom board with two [DRV8317H](https://www.ti.com/product/DRV8317) drivers powered with 5V, see gimbal-hardware repository for details
-- [GB2205 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder) or [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the tilt axis
-- [GB2806 Gimbal Motor](https://steadywin-motor.com/products/micro-ptz-high-quality-three-phase-high-speed-brushless-motor-pod-parts-with-magnetic-encoder-1) with AS5600 (I2C) encoder for the pan (yaw) axis
+For details on the hardware please consult the gimbal-hardware repository.
 
 # Development
 
