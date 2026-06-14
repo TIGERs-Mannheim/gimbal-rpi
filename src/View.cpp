@@ -2,6 +2,8 @@
 #include "easylogging++.h"
 #include "src/misc/lv_event_private.h"
 
+using namespace std::chrono_literals;
+
 View::View()
 {
     // Create display device
@@ -62,6 +64,60 @@ View::View()
     createSetupTile();
     createPoseTile();
     loadTile(0);
+
+    lvThread_ = std::jthread(std::bind_front(&View::lvglThread, this));
+}
+
+void View::lvglThread(std::stop_token st)
+{
+    using clock_t = std::chrono::steady_clock;
+
+    auto tLastCall = clock_t::now();
+
+    while(!st.stop_requested())
+    {
+        State state;
+        std::optional<Settings::CameraPose> newCameraPose;
+
+        {
+            std::lock_guard<std::mutex> lock(stateMutex_);
+            state = state_;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(newCameraPoseMutex_);
+            if(newCameraPose_.has_value())
+            {
+                newCameraPose = newCameraPose_;
+                newCameraPose_.reset();
+            }
+        }
+
+        lv_label_set_text(status_.pLblHostname, state.hostname.c_str());
+        lv_label_set_text(status_.pLblOwnIp, state.ip.c_str());
+        lv_label_set_text(status_.pLblTracker, state.tracker.c_str());
+        lv_label_set_text(status_.pLblTrackerIp, state.trackerIp.c_str());
+        lv_label_set_text_fmt(status_.pLblBallPos, "%6.2f %6.2f %6.2f", state.ballPos_m[0], state.ballPos_m[1], state.ballPos_m[2]);
+        lv_label_set_text_fmt(status_.pLblGimbal, "%.2fV, %.0f%% CPU", state.gimbalSupply_V, state.gimbalCpuLoad*100.0f);
+        lv_label_set_text(pLblMode_, state.mode.c_str());
+        lv_label_set_text_fmt(pLblPan_, "Pan: % .1f°", state.pan_deg);
+        lv_label_set_text_fmt(pLblTilt_, "Tilt: % .1f°", state.tilt_deg);
+        lv_label_set_text_fmt(setup_.pLblPanRange, "% .1f .. % .1f", state.limitPan_deg[0], state.limitPan_deg[1]);
+        lv_label_set_text_fmt(setup_.pLblTiltRange, "% .1f .. % .1f", state.limitTilt_deg[0], state.limitTilt_deg[1]);
+
+        if(newCameraPose.has_value())
+        {
+            lv_spinbox_set_value(pose_.pBoxX, newCameraPose->positionInFieldFrame_m[0] * 1000.0f);
+            lv_spinbox_set_value(pose_.pBoxY, newCameraPose->positionInFieldFrame_m[1] * 1000.0f);
+            lv_spinbox_set_value(pose_.pBoxZ, newCameraPose->positionInFieldFrame_m[2] * 1000.0f);
+            lv_spinbox_set_value(pose_.pBoxYaw, newCameraPose->yawInFieldFrame_deg);
+        }
+
+        lv_timer_handler();
+
+        std::this_thread::sleep_until(tLastCall+30ms);
+        tLastCall = clock_t::now();
+    }
 }
 
 lv_obj_t* View::createHeader(lv_obj_t* pParent)
@@ -128,7 +184,6 @@ void View::setupScreen()
 
     auto pScreen = lv_screen_active();
 
-    // auto pContainer = lv_obj_create(pScreen);
     lv_obj_add_style(pScreen, &style_, 0);
     lv_obj_add_style(pScreen, &styleSmall_, 0);
     lv_obj_set_style_pad_all(pScreen, 0, 0);
@@ -219,7 +274,6 @@ lv_obj_t* View::createStatusTile()
         return pBtn;
     };
 
-    // addBtn(LV_SYMBOL_HOME, 0, 0, EVENT_HOME_CLICKED);
     auto pBtnOff = addBtn("Off", 0, 0, EVENT_OFF_CLICKED);
     addBtn("Manual", 0, 1, EVENT_MANUAL_CLICKED);
     addBtn("Live", 0, 2, EVENT_LIVE_CLICKED);
@@ -392,36 +446,22 @@ void View::loadTile(uint32_t tileIndex)
     tileIndex_ = tileIndex;
 }
 
-void View::spinOnce()
-{
-    lv_timer_handler();
-}
-
 void View::setState(const State& state)
 {
-    lv_label_set_text(status_.pLblHostname, state.hostname.c_str());
-    lv_label_set_text(status_.pLblOwnIp, state.ip.c_str());
-    lv_label_set_text(status_.pLblTracker, state.tracker.c_str());
-    lv_label_set_text(status_.pLblTrackerIp, state.trackerIp.c_str());
-    lv_label_set_text_fmt(status_.pLblBallPos, "%6.2f %6.2f %6.2f", state.ballPos_m[0], state.ballPos_m[1], state.ballPos_m[2]);
-    lv_label_set_text_fmt(status_.pLblGimbal, "%.2fV, %.0f%% CPU", state.gimbalSupply_V, state.gimbalCpuLoad*100.0f);
-    lv_label_set_text(pLblMode_, state.mode.c_str());
-    lv_label_set_text_fmt(pLblPan_, "Pan: % .1f°", state.pan_deg);
-    lv_label_set_text_fmt(pLblTilt_, "Tilt: % .1f°", state.tilt_deg);
-    lv_label_set_text_fmt(setup_.pLblPanRange, "% .1f .. % .1f", state.limitPan_deg[0], state.limitPan_deg[1]);
-    lv_label_set_text_fmt(setup_.pLblTiltRange, "% .1f .. % .1f", state.limitTilt_deg[0], state.limitTilt_deg[1]);
+    std::lock_guard<std::mutex> lock(stateMutex_);
+    state_ = state;
 }
 
-void View::setPose(std::array<float, 3> positionInFieldFrame_m, float yawInFieldFrame_deg)
+void View::setPose(const Settings::CameraPose& pose)
 {
-    lv_spinbox_set_value(pose_.pBoxX, positionInFieldFrame_m[0] * 1000.0f);
-    lv_spinbox_set_value(pose_.pBoxY, positionInFieldFrame_m[1] * 1000.0f);
-    lv_spinbox_set_value(pose_.pBoxZ, positionInFieldFrame_m[2] * 1000.0f);
-    lv_spinbox_set_value(pose_.pBoxYaw, yawInFieldFrame_deg);
+    std::lock_guard<std::mutex> lock(newCameraPoseMutex_);
+    newCameraPose_ = pose;
 }
 
 bool View::getNextEvent(EventData& event)
 {
+    std::lock_guard<std::mutex> lock(eventQueueMutex_);
+
     if(eventQueue_.empty())
         return false;
 
@@ -496,6 +536,7 @@ void View::lvEventCallback(lv_event_t* pEvent)
             pEventData->intParam = lv_spinbox_get_value(pSrc);
         }
 
+        std::lock_guard<std::mutex> lock(pPresenter->eventQueueMutex_);
         pPresenter->eventQueue_.push(*pEventData);
     }
 }

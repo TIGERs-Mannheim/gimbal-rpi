@@ -1,11 +1,12 @@
 #pragma once
 
 #include "util/RPiGPIO.hpp"
+#include "Settings.hpp"
 #include <lvgl.h>
 #include <string>
-#include <functional>
 #include <memory>
 #include <queue>
+#include <thread>
 
 class View
 {
@@ -52,16 +53,16 @@ public:
 
     View();
 
-    void spinOnce();
     void setState(const State& state);
-
-    void setPose(std::array<float, 3> positionInFieldFrame_m, float yawInFieldFrame_deg);
+    void setPose(const Settings::CameraPose& pose);
 
     bool getNextEvent(EventData& event);
 
 private:
     static void lvIndevReadWrapper(lv_indev_t* pIndev, lv_indev_data_t* pData);
     static void lvEventCallback(lv_event_t* pEvent);
+
+    void lvglThread(std::stop_token st);
 
     lv_obj_t* createHeader(lv_obj_t* pParent);
     lv_obj_t* createFooter(lv_obj_t* pParent);
@@ -72,6 +73,18 @@ private:
     lv_obj_t* createPoseTile();
 
     void loadTile(uint32_t tileIndex);
+
+    std::vector<std::unique_ptr<EventData>> eventData_;
+    std::queue<EventData> eventQueue_;
+    std::mutex eventQueueMutex_;
+
+    std::jthread lvThread_;
+
+    State state_;
+    std::mutex stateMutex_;
+
+    std::optional<Settings::CameraPose> newCameraPose_;
+    std::mutex newCameraPoseMutex_;
 
     struct MappedKey
     {
@@ -106,9 +119,6 @@ private:
         const char* pName = nullptr;
         lv_group_t* pInputGroup = nullptr;
     };
-
-    std::vector<std::unique_ptr<EventData>> eventData_;
-    std::queue<EventData> eventQueue_;
 
     struct
     {

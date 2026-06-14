@@ -2,6 +2,8 @@
 #include "easylogging++.h"
 #include "math_util.hpp"
 
+using namespace std::chrono_literals;
+
 TrackingCamera::TrackingCamera()
 : settings_("/root/ssl_tracking_cam.json"),
   eth0_("eth0"),
@@ -25,7 +27,26 @@ TrackingCamera::TrackingCamera()
     pGimbalController_->disableMotors();
     sendServoConfig();
 
-    view_.setPose(settings_.cameraPose.positionInFieldFrame_m, settings_.cameraPose.yawInFieldFrame_deg);
+    view_.setPose(settings_.cameraPose);
+
+    cfgChangeCheckerThread_ = std::jthread([&](std::stop_token st)
+                                           {
+       while(!st.stop_requested())
+       {
+           Settings diskSettings(settings_.filename);
+
+            nlohmann::json jDisk;
+            nlohmann::json jMem;
+            to_json(jDisk, diskSettings);
+            to_json(jMem, settings_);
+
+            if(jDisk != jMem)
+            {
+                hasCfgChangedOnDisk_ = true;
+            }
+
+           std::this_thread::sleep_for(100ms);
+       } });
 
     initSuccess_ = true;
 }
@@ -40,21 +61,14 @@ int TrackingCamera::spinOnce()
 
     // TODO: add simple profiling
 
-    // TODO: takes around 2ms => move to thread
-    // check if settings changed on disk
-    Settings diskSettings(settings_.filename);
-
-    nlohmann::json jDisk;
-    nlohmann::json jMem;
-    to_json(jDisk, diskSettings);
-    to_json(jMem, settings_);
-
-    if(jDisk != jMem)
+    if(hasCfgChangedOnDisk_)
     {
+        hasCfgChangedOnDisk_ = false;
         LOG(INFO) << "JSON Settings changed. Updating gimbal controller.";
-        from_json(jDisk, settings_);
 
+        settings_.load();
         sendServoConfig();
+        view_.setPose(settings_.cameraPose);
     }
 
     trackedFrameProvider_.spinOnce();
@@ -146,8 +160,7 @@ int TrackingCamera::spinOnce()
         }
     }
 
-    view_.setState(viewState); // 300us
-    view_.spinOnce(); // 10ms => move to thread
+    view_.setState(viewState);
 
     View::EventData event;
     while(view_.getNextEvent(event))
@@ -188,15 +201,15 @@ void TrackingCamera::handleEvent(View::EventData& event)
             quit_ = true;
             break;
         case View::EVENT_POSE_X_CHANGED:
-            settings_.cameraPose.positionInFieldFrame_m[0] = event.intParam*0.001f;
+            settings_.cameraPose.positionInFieldFrame_m[0] = event.intParam * 0.001f;
             settings_.save();
             break;
         case View::EVENT_POSE_Y_CHANGED:
-            settings_.cameraPose.positionInFieldFrame_m[1] = event.intParam*0.001f;
+            settings_.cameraPose.positionInFieldFrame_m[1] = event.intParam * 0.001f;
             settings_.save();
             break;
         case View::EVENT_POSE_Z_CHANGED:
-            settings_.cameraPose.positionInFieldFrame_m[2] = event.intParam*0.001f;
+            settings_.cameraPose.positionInFieldFrame_m[2] = event.intParam * 0.001f;
             settings_.save();
             break;
         case View::EVENT_POSE_ORIENTATION_CHANGED:

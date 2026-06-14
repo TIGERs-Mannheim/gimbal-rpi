@@ -4,6 +4,8 @@
 #include <lvgl.h>
 #include <chrono>
 
+using namespace std::chrono_literals;
+
 INITIALIZE_EASYLOGGINGPP
 
 bool runFlag = true;
@@ -46,6 +48,8 @@ int main(int, char**)
     float runtimeSum_us = 0.0f;
     float runtimeSamples = 0;
 
+    auto tLastCall = std::chrono::steady_clock::now();
+
     try
     {
         while(runFlag)
@@ -74,7 +78,8 @@ int main(int, char**)
                 runtimeSamples = 0;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_until(tLastCall+10ms);
+            tLastCall = std::chrono::steady_clock::now();
         }
     }
     catch(std::exception& ex)

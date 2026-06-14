@@ -40,4 +40,7 @@ private:
 
     Mode mode_ = MODE_LIVE;
     bool quit_ = false;
+
+    std::jthread cfgChangeCheckerThread_;
+    std::atomic<bool> hasCfgChangedOnDisk_;
 };
