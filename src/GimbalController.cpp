@@ -20,7 +20,8 @@ GimbalController::~GimbalController()
 
 void GimbalController::spinOnce()
 {
-    transceiver_.spinOnce();
+    if(!pBootloader_->isActive())
+        transceiver_.spinOnce();
 
     gimbal_protocol::Message msg;
 
