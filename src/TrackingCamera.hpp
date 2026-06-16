@@ -43,4 +43,6 @@ private:
 
     std::jthread cfgChangeCheckerThread_;
     std::atomic<bool> hasCfgChangedOnDisk_;
+
+    bool isConfigurationSent_ = false;
 };

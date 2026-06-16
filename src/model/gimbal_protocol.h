@@ -28,6 +28,8 @@ enum State
 
 #pragma pack(push, 1)
 
+// Important: structs below must be manually padded so that floats are at a 4 byte boundary to avoid unaligned access!
+
 typedef struct
 {
     uint16_t version;
@@ -54,6 +56,10 @@ typedef struct
     struct
     {
         float encoderPosition_rad[GIMBAL_NUM_AXES];
+        float encoderVelocityLP_rad[GIMBAL_NUM_AXES];
+        float currentQLP_A[GIMBAL_NUM_AXES];
+        uint16_t encoderErrorFlags[GIMBAL_NUM_AXES];
+        uint16_t motorErrorFlags[GIMBAL_NUM_AXES];
     } motion;
 } GimbalMsgState;
 
@@ -69,7 +75,6 @@ typedef struct
     float velMax_radDs;
     float accMax_radDs2;
     float jerkMax_radDs3;
-    uint8_t isPosMode;
 } GimbalMsgTaskMove;
 
 typedef struct

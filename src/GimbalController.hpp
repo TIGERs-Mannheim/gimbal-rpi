@@ -4,6 +4,7 @@
 #include "Settings.hpp"
 #include "math_util.hpp"
 #include "model/GimbalProtocolTransceiver.hpp"
+#include "util/STBootloader.hpp"
 
 class GimbalController
 {
@@ -15,7 +16,6 @@ public:
 
     void startCalibration(uint8_t axisId, float testVoltage_V = 2.5f);
     void setTargetPos(float pan_deg, float tilt_deg);
-    void setTargetVel(float pan_degDs, float tilt_degDs);
     void disableMotors();
 
     bool isConnected() const;
@@ -42,4 +42,6 @@ private:
     clock_t::time_point tLastMsgReceived_;
 
     GimbalMsgState state_ {};
+
+    std::unique_ptr<STBootloader> pBootloader_;
 };

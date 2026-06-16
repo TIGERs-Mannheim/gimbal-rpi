@@ -24,8 +24,6 @@ TrackingCamera::TrackingCamera()
     }
 
     pGimbalController_ = std::make_unique<GimbalController>(settings_, pSerialPort);
-    pGimbalController_->disableMotors();
-    sendServoConfig();
 
     view_.setPose(settings_.cameraPose);
 
@@ -59,8 +57,6 @@ int TrackingCamera::spinOnce()
 {
     View::State viewState;
 
-    // TODO: add simple profiling
-
     if(hasCfgChangedOnDisk_)
     {
         hasCfgChangedOnDisk_ = false;
@@ -74,6 +70,14 @@ int TrackingCamera::spinOnce()
     trackedFrameProvider_.spinOnce();
     pGimbalController_->spinOnce();
     joystick_.spinOnce();
+
+    if(pGimbalController_->isReady() && !isConfigurationSent_)
+    {
+        sendServoConfig();
+    }
+
+    if(!pGimbalController_->isReady())
+        isConfigurationSent_ = false;
 
     auto pTrackedFrame = trackedFrameProvider_.getLatestTrackedFrame();
     if(pTrackedFrame && pTrackedFrame->getTrackedFrame().n_balls > 0 && pGimbalController_->isReady())
