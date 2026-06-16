@@ -121,25 +121,8 @@ void GimbalController::setTargetPos(float pan_deg, float tilt_deg)
         return;
 
     GimbalMsgTaskMove move;
-    move.isPosMode = 1;
     move.target[0] = -DEG_TO_RAD(pan_deg + settings_.cameraPose.axisZeroOffsets_deg[0]);
     move.target[1] = DEG_TO_RAD(tilt_deg + settings_.cameraPose.axisZeroOffsets_deg[1]);
-    move.velMax_radDs = DEG_TO_RAD(settings_.limits.velMax_degDs);
-    move.accMax_radDs2 = DEG_TO_RAD(settings_.limits.accMax_degDs2);
-    move.jerkMax_radDs3 = DEG_TO_RAD(settings_.limits.jerkMax_degDs3);
-
-    transceiver_.send(gimbal_protocol::Message(GIMBAL_MSG_TYPE_TASK_MOVE, move));
-}
-
-void GimbalController::setTargetVel(float pan_degDs, float tilt_degDs)
-{
-    if(!isReady())
-        return;
-
-    GimbalMsgTaskMove move;
-    move.isPosMode = 0;
-    move.target[0] = -DEG_TO_RAD(pan_degDs);
-    move.target[1] = DEG_TO_RAD(tilt_degDs);
     move.velMax_radDs = DEG_TO_RAD(settings_.limits.velMax_degDs);
     move.accMax_radDs2 = DEG_TO_RAD(settings_.limits.accMax_degDs2);
     move.jerkMax_radDs3 = DEG_TO_RAD(settings_.limits.jerkMax_degDs3);

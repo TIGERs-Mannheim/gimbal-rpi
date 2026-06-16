@@ -16,7 +16,6 @@ public:
 
     void startCalibration(uint8_t axisId, float testVoltage_V = 2.5f);
     void setTargetPos(float pan_deg, float tilt_deg);
-    void setTargetVel(float pan_degDs, float tilt_degDs);
     void disableMotors();
 
     bool isConnected() const;

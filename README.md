@@ -59,12 +59,15 @@ You need to adjust your sysroot and toolchain path and select a proper toolchain
 
 The repository contains `Config.in` and `gimbal-rpi.mk` for easy buildroot integration.
 
-If you have the tigers-buildroot repository just clone `gimbal-rpi` into `tigers-buildroot/tigers/package`.
-Go into the `tigers-buildroot` folder and make the new package know to buildroot: `cat tigers/package/gimbal-rpi/Config.in >> tigers/Config.in`.
-Then add it to a default board configuration: `echo BR2_PACKAGE_GIMBAL_RPI=y >> tigers/configs/gimbal_pizero_defconfig`.
-Afterward, reload your board configuration: `cd tigers && make gimbal_pizero_defconfig` 
-and make a clean build `cd ../output/gimbal_pizero && make clean && make -j8`.
-The `gimbal-rpi.mk` is automatically picked up by buildroot.
+- If you have the tigers-buildroot repository just clone `gimbal-rpi` into `tigers-buildroot/tigers/package`.
+- Go into the `tigers-buildroot` folder and make the new package known to buildroot:  
+  `cat tigers/package/gimbal-rpi/Config.in >> tigers/Config.in`.
+- Then add it to a default board configuration:  
+  `echo BR2_PACKAGE_GIMBAL_RPI=y >> tigers/configs/gimbal_pizero_defconfig`.
+- Afterward, reload your board configuration:  
+  `cd tigers && make gimbal_pizero_defconfig` and make a clean build  
+  `cd ../output/gimbal_pizero && make clean && make -j8`.
+- The `gimbal-rpi.mk` is automatically picked up by buildroot.
 
 See the tigers-buildroot repository for more details on how to use it.
 The `.gitlab-ci.yml` contains an example of how to integrate the whole process in a CI/CD.
