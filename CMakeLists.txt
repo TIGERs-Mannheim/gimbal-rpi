@@ -61,6 +61,7 @@ add_executable(${PROJECT_NAME}
     src/util/cobs.c
     src/util/crc.c
     src/util/math_util.cpp
+    src/util/STBootloader.cpp
 
     src/protobuf-c/protobuf-c.c
     src/protobuf-c/messages_robocup_ssl_wrapper_tracked.pb-c.c

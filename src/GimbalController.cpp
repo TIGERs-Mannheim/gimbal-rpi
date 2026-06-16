@@ -2,11 +2,16 @@
 #include "easylogging++.h"
 #include "math_util.hpp"
 
+using namespace std::chrono_literals;
+
 GimbalController::GimbalController(Settings& settings, std::shared_ptr<ISerialPort> pSerialPort)
 : settings_(settings),
   pSerialPort_(pSerialPort),
   transceiver_(pSerialPort_)
 {
+    // Start (possible) firmware update
+    pBootloader_ = std::make_unique<STBootloader>(pSerialPort, "GPIO22", "GPIO23");
+    pBootloader_->startUpdate("/root/gimbal_mcu_firmware.bin");
 }
 
 GimbalController::~GimbalController()
@@ -87,7 +92,7 @@ bool GimbalController::isConnected() const
 
 bool GimbalController::isReady() const
 {
-    return isConnected() && state_.isServoCalibrated[0] && state_.isServoCalibrated[1];
+    return isConnected() && !pBootloader_->isActive() && state_.isServoCalibrated[0] && state_.isServoCalibrated[1];
 }
 
 float GimbalController::getCurrentPositionRaw_deg(uint8_t axisId) const
@@ -100,6 +105,9 @@ float GimbalController::getCurrentPositionRaw_deg(uint8_t axisId) const
 
 void GimbalController::startCalibration(uint8_t axisId, float testVoltage_V)
 {
+    if(pBootloader_->isActive())
+        return;
+
     GimbalMsgTaskCalibrate calib;
     calib.axisId = axisId;
     calib.testVoltage_mV = std::lround(testVoltage_V * 1000.0f);
@@ -109,6 +117,9 @@ void GimbalController::startCalibration(uint8_t axisId, float testVoltage_V)
 
 void GimbalController::setTargetPos(float pan_deg, float tilt_deg)
 {
+    if(!isReady())
+        return;
+
     GimbalMsgTaskMove move;
     move.isPosMode = 1;
     move.target[0] = -DEG_TO_RAD(pan_deg + settings_.cameraPose.axisZeroOffsets_deg[0]);
@@ -122,6 +133,9 @@ void GimbalController::setTargetPos(float pan_deg, float tilt_deg)
 
 void GimbalController::setTargetVel(float pan_degDs, float tilt_degDs)
 {
+    if(!isReady())
+        return;
+
     GimbalMsgTaskMove move;
     move.isPosMode = 0;
     move.target[0] = -DEG_TO_RAD(pan_degDs);
@@ -135,11 +149,17 @@ void GimbalController::setTargetVel(float pan_degDs, float tilt_degDs)
 
 void GimbalController::disableMotors()
 {
+    if(!isReady())
+        return;
+
     transceiver_.send(gimbal_protocol::Message(GIMBAL_MSG_TYPE_TASK_RESET));
 }
 
 void GimbalController::setCalibration(uint8_t axisId, const GimbalServoCalibration& calib)
 {
+    if(pBootloader_->isActive())
+        return;
+
     GimbalMsgServoCalibration msg;
     msg.axisId = axisId;
     msg.data = calib;
@@ -150,6 +170,9 @@ void GimbalController::setCalibration(uint8_t axisId, const GimbalServoCalibrati
 
 void GimbalController::setConfiguration(uint8_t axisId, const GimbalServoParameters& params)
 {
+    if(pBootloader_->isActive())
+        return;
+
     GimbalMsgServoParameters msg;
     msg.axisId = axisId;
     msg.data = params;

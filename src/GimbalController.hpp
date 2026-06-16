@@ -4,6 +4,7 @@
 #include "Settings.hpp"
 #include "math_util.hpp"
 #include "model/GimbalProtocolTransceiver.hpp"
+#include "util/STBootloader.hpp"
 
 class GimbalController
 {
@@ -42,4 +43,6 @@ private:
     clock_t::time_point tLastMsgReceived_;
 
     GimbalMsgState state_ {};
+
+    std::unique_ptr<STBootloader> pBootloader_;
 };
