@@ -74,6 +74,7 @@ int TrackingCamera::spinOnce()
     if(pGimbalController_->isReady() && !isConfigurationSent_)
     {
         sendServoConfig();
+        isConfigurationSent_ = true;
     }
 
     if(!pGimbalController_->isReady())

@@ -115,6 +115,7 @@ typedef struct
         float Kd;
         float outputRamp_ADs;
         float outputLimit_A;
+        float outputBandwidth_Hz;
     } velocity;
 
     struct

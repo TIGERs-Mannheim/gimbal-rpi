@@ -71,6 +71,7 @@ private:
     lv_obj_t* createStatusTile();
     lv_obj_t* createSetupTile();
     lv_obj_t* createPoseTile();
+    lv_obj_t* createDebugTile();
 
     void loadTile(uint32_t tileIndex);
 
@@ -129,7 +130,6 @@ private:
         lv_obj_t* pLblTracker;
         lv_obj_t* pLblTrackerIp;
         lv_obj_t* pLblBallPos;
-        lv_obj_t* pLblGimbal;
     } status_;
 
     struct
@@ -149,4 +149,11 @@ private:
         lv_obj_t* pBoxZ;
         lv_obj_t* pBoxYaw;
     } pose_;
+
+    struct
+    {
+        TileData data;
+
+        lv_obj_t* pLblSupplyAndCpu;
+    } debug_;
 };

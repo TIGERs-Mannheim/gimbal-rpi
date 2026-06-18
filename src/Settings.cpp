@@ -59,6 +59,7 @@ GimbalServoParameters Settings::getDefaultServoParameters()
     params.velocity.Kd = 0.0f;
     params.velocity.outputLimit_A = 0.8f;
     params.velocity.outputRamp_ADs = 0.0f;
+    params.velocity.outputBandwidth_Hz = 150.0f;
     params.position.Kp = 20.0f;
     params.position.Ki = 0.0f;
     params.position.Kd = 0.0f;

@@ -63,6 +63,7 @@ View::View()
     createStatusTile();
     createSetupTile();
     createPoseTile();
+    createDebugTile();
     loadTile(0);
 
     lvThread_ = std::jthread(std::bind_front(&View::lvglThread, this));
@@ -98,12 +99,13 @@ void View::lvglThread(std::stop_token st)
         lv_label_set_text(status_.pLblTracker, state.tracker.c_str());
         lv_label_set_text(status_.pLblTrackerIp, state.trackerIp.c_str());
         lv_label_set_text_fmt(status_.pLblBallPos, "%6.2f %6.2f %6.2f", state.ballPos_m[0], state.ballPos_m[1], state.ballPos_m[2]);
-        lv_label_set_text_fmt(status_.pLblGimbal, "%.2fV, %.0f%% CPU", state.gimbalSupply_V, state.gimbalCpuLoad*100.0f);
         lv_label_set_text(pLblMode_, state.mode.c_str());
         lv_label_set_text_fmt(pLblPan_, "Pan: % .1f°", state.pan_deg);
         lv_label_set_text_fmt(pLblTilt_, "Tilt: % .1f°", state.tilt_deg);
         lv_label_set_text_fmt(setup_.pLblPanRange, "% .1f .. % .1f", state.limitPan_deg[0], state.limitPan_deg[1]);
         lv_label_set_text_fmt(setup_.pLblTiltRange, "% .1f .. % .1f", state.limitTilt_deg[0], state.limitTilt_deg[1]);
+
+        lv_label_set_text_fmt(debug_.pLblSupplyAndCpu, "%.2fV, %.0f%% CPU", state.gimbalSupply_V, state.gimbalCpuLoad*100.0f);
 
         if(newCameraPose.has_value())
         {
@@ -211,7 +213,7 @@ lv_obj_t* View::createStatusTile()
 
     // Content Section
     static int32_t contentColumnWidths[] = { 70, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
-    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
 
     auto pContentGrid = lv_obj_create(pTile);
     lv_obj_add_style(pContentGrid, &style_, 0);
@@ -238,7 +240,6 @@ lv_obj_t* View::createStatusTile()
     status_.pLblTracker = addRow("Tracker:", "None", 2);
     status_.pLblTrackerIp = addRow("", "-", 3);
     status_.pLblBallPos = addRow("Ball:", "-", 4);
-    status_.pLblGimbal = addRow("Gimbal:", "-", 5);
 
     // Button Section
     static int32_t buttonColumnWidths[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
@@ -424,6 +425,43 @@ lv_obj_t* View::createPoseTile()
     pose_.data.pName = "Cam Pose";
     pose_.data.pInputGroup = pInputGroup;
     lv_obj_set_user_data(pTile, &pose_.data);
+
+    return pTile;
+}
+
+lv_obj_t* View::createDebugTile()
+{
+    static int32_t contentColumnWidths[] = { 70, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+
+    auto pTile = lv_tileview_add_tile(pTileView_, 3, 0, LV_DIR_HOR);
+    auto pInputGroup = lv_group_create();
+
+    auto pContentGrid = lv_obj_create(pTile);
+    lv_obj_add_style(pContentGrid, &style_, 0);
+    lv_obj_add_style(pContentGrid, &styleSmall_, 0);
+    lv_obj_set_size(pContentGrid, LV_PCT(100), 160);
+    lv_obj_set_scrollbar_mode(pContentGrid, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_grid_dsc_array(pContentGrid, contentColumnWidths, contentRowHeights);
+
+    auto addRow = [&](const char* pName, const char* pDefaultText, int32_t row)
+    {
+        auto pNameLabel = lv_label_create(pContentGrid);
+        lv_obj_set_grid_cell(pNameLabel, LV_GRID_ALIGN_START, 0, 1, LV_GRID_ALIGN_CENTER, row, 1);
+        lv_label_set_text(pNameLabel, pName);
+
+        auto pValueLabel = lv_label_create(pContentGrid);
+        lv_obj_set_grid_cell(pValueLabel, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_CENTER, row, 1);
+        lv_label_set_text(pValueLabel, pDefaultText);
+
+        return pValueLabel;
+    };
+
+    debug_.pLblSupplyAndCpu = addRow("MCU:", "-", 0);
+
+    debug_.data.pName = "Debug";
+    debug_.data.pInputGroup = pInputGroup;
+    lv_obj_set_user_data(pTile, &debug_.data);
 
     return pTile;
 }
