@@ -11,7 +11,15 @@ GimbalController::GimbalController(Settings& settings, std::shared_ptr<ISerialPo
 {
     // Start (possible) firmware update
     pBootloader_ = std::make_unique<STBootloader>(pSerialPort, "GPIO22", "GPIO23");
-    pBootloader_->startUpdate("/root/gimbal_mcu_firmware.bin");
+
+    if(std::filesystem::exists("/opt/gimbal_mcu_firmware.bin"))
+    {
+        pBootloader_->startUpdate("/opt/gimbal_mcu_firmware.bin");
+    }
+    else if(std::filesystem::exists("/usr/lib/firmware/gimbal_mcu_firmware.bin"))
+    {
+        pBootloader_->startUpdate("/usr/lib/firmware/gimbal_mcu_firmware.bin");
+    }
 }
 
 GimbalController::~GimbalController()
