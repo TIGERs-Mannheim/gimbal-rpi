@@ -5,7 +5,7 @@
 using namespace std::chrono_literals;
 
 TrackingCamera::TrackingCamera()
-: settings_("/root/ssl_tracking_cam.json"),
+: settings_("/opt/ssl_tracking_cam.json"),
   eth0_("eth0"),
   hostname_("/proc/sys/kernel/hostname"),
   trackedFrameProvider_(settings_)
@@ -33,15 +33,15 @@ TrackingCamera::TrackingCamera()
        {
            Settings diskSettings(settings_.filename);
 
-            nlohmann::json jDisk;
-            nlohmann::json jMem;
-            to_json(jDisk, diskSettings);
-            to_json(jMem, settings_);
+           nlohmann::json jDisk;
+           nlohmann::json jMem;
+           to_json(jDisk, diskSettings);
+           to_json(jMem, settings_);
 
-            if(jDisk != jMem)
-            {
-                hasCfgChangedOnDisk_ = true;
-            }
+           if(jDisk != jMem)
+           {
+               hasCfgChangedOnDisk_ = true;
+           }
 
            std::this_thread::sleep_for(100ms);
        } });
@@ -74,6 +74,7 @@ int TrackingCamera::spinOnce()
     if(pGimbalController_->isReady() && !isConfigurationSent_)
     {
         sendServoConfig();
+        isConfigurationSent_ = true;
     }
 
     if(!pGimbalController_->isReady())
@@ -116,8 +117,7 @@ int TrackingCamera::spinOnce()
     viewState.tilt_deg = pGimbalController_->getCurrentTilt_deg();
     viewState.limitPan_deg = settings_.limits.pan_deg;
     viewState.limitTilt_deg = settings_.limits.tilt_deg;
-    viewState.gimbalSupply_V = pGimbalController_->getState().power.supplyVcc_mV * 0.001f;
-    viewState.gimbalCpuLoad = pGimbalController_->getState().cpuLoad * 0.01f;
+    viewState.gimbalState = pGimbalController_->getState();
 
     if(pTrackedFrame)
     {

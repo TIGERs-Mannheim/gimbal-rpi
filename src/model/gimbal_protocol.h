@@ -61,6 +61,15 @@ typedef struct
         uint16_t encoderErrorFlags[GIMBAL_NUM_AXES];
         uint16_t motorErrorFlags[GIMBAL_NUM_AXES];
     } motion;
+
+    struct
+    {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+        uint8_t dirty;
+        uint32_t sha1;
+    } version;
 } GimbalMsgState;
 
 typedef struct
@@ -115,6 +124,7 @@ typedef struct
         float Kd;
         float outputRamp_ADs;
         float outputLimit_A;
+        float outputBandwidth_Hz;
     } velocity;
 
     struct
