@@ -45,10 +45,15 @@ void STBootloader::doUpdate(std::string fwFilename)
     auto fwData = std::vector<uint8_t>(std::istreambuf_iterator<char>(file), {});
     file.close();
 
+    LOG(INFO) << "Checking firmware against: " << fwFilename;
+
     auto result = flash(fwData.data(), fwData.size(), 0x08000000, 256*1024, false, flashResult_);
     if(result == RESULT_OK)
     {
-        LOG(INFO) << "Firmware check/update successful.";
+        if(flashResult_.isUpdated)
+            LOG(INFO) << "Firmware update successful.";
+        else
+            LOG(INFO) << "Firmware already up-to-date.";
     }
     else
     {
