@@ -45,10 +45,15 @@ void STBootloader::doUpdate(std::string fwFilename)
     auto fwData = std::vector<uint8_t>(std::istreambuf_iterator<char>(file), {});
     file.close();
 
+    LOG(INFO) << "Checking firmware against: " << fwFilename;
+
     auto result = flash(fwData.data(), fwData.size(), 0x08000000, 256*1024, false, flashResult_);
     if(result == RESULT_OK)
     {
-        LOG(INFO) << "Firmware check/update successful.";
+        if(flashResult_.isUpdateRequired && flashResult_.isUpdated)
+            LOG(INFO) << "Firmware update successful.";
+        else
+            LOG(INFO) << "Firmware already up-to-date.";
     }
     else
     {
@@ -330,7 +335,7 @@ STBootloader::Result STBootloader::flash(const uint8_t* pProgram, uint32_t progr
     flashResult.numBlocks = 0;
     flashResult.time_us = 0;
 
-    if(targetSize < programSize + 4)
+    if(targetSize < programSize + 8)
         return RESULT_INVALID_ARGUMENT;
 
     result = startBootloader();
@@ -359,7 +364,7 @@ STBootloader::Result STBootloader::flash(const uint8_t* pProgram, uint32_t progr
     if(!forceUpdate)
     {
         uint32_t targetCRC;
-        result = cmdReadMemory(targetAddress + targetSize - 4, (uint8_t*)&targetCRC, 4);
+        result = cmdReadMemory(targetAddress + targetSize - 8, (uint8_t*)&targetCRC, 4);
         if(result)
             return result;
 
@@ -408,7 +413,7 @@ STBootloader::Result STBootloader::flash(const uint8_t* pProgram, uint32_t progr
             return RESULT_ABORTED;
     }
 
-    result = cmdWriteMemory(targetAddress + targetSize - 4, (uint8_t*)&programCRC, 4);
+    result = cmdWriteMemory(targetAddress + targetSize - 8, (uint8_t*)&programCRC, 4);
     if(result)
         return result;
 

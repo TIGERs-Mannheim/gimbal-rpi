@@ -11,7 +11,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GimbalServoCalibration,
                                                 encoderPosElectricalZero, phaseResistance_R, phaseInductance_H);
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GimbalServoParameters, current.bandwidth_Hz, current.outputRamp_VDs,
-                                            velocity.lowPassBandwidth_Hz, velocity.Kp, velocity.Ki, velocity.Kd, velocity.outputRamp_ADs, velocity.outputLimit_A,
+                                            velocity.lowPassBandwidth_Hz, velocity.Kp, velocity.Ki, velocity.Kd, velocity.outputRamp_ADs, velocity.outputLimit_A, velocity.outputBandwidth_Hz,
                                             position.Kp, position.Ki, position.Kd, position.outputRamp_radDs2, position.outputLimit_radDs);
 
 struct Settings

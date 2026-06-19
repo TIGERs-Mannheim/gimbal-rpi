@@ -47,8 +47,8 @@ public:
         float tilt_deg = 0.0f;
         std::array<float, 2> limitPan_deg = { -90.0f, 90.0f };
         std::array<float, 2> limitTilt_deg = { -40.0f, 40.0f };
-        float gimbalSupply_V = 0.0f;
-        float gimbalCpuLoad = 0.0f;
+
+        GimbalMsgState gimbalState;
     };
 
     View();
@@ -71,6 +71,7 @@ private:
     lv_obj_t* createStatusTile();
     lv_obj_t* createSetupTile();
     lv_obj_t* createPoseTile();
+    lv_obj_t* createDebugTile();
 
     void loadTile(uint32_t tileIndex);
 
@@ -129,7 +130,6 @@ private:
         lv_obj_t* pLblTracker;
         lv_obj_t* pLblTrackerIp;
         lv_obj_t* pLblBallPos;
-        lv_obj_t* pLblGimbal;
     } status_;
 
     struct
@@ -149,4 +149,16 @@ private:
         lv_obj_t* pBoxZ;
         lv_obj_t* pBoxYaw;
     } pose_;
+
+    struct
+    {
+        TileData data;
+
+        lv_obj_t* pLblSupplyAndCpu;
+        lv_obj_t* pLblVelocity;
+        lv_obj_t* pLblCurrent;
+        lv_obj_t* pLblEncoderErrors;
+        lv_obj_t* pLblMotorErrors;
+        lv_obj_t* pLblMcuVersion;
+    } debug_;
 };

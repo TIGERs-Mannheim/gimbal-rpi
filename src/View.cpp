@@ -1,6 +1,7 @@
 #include "View.hpp"
 #include "easylogging++.h"
 #include "src/misc/lv_event_private.h"
+#include "git_version.h"
 
 using namespace std::chrono_literals;
 
@@ -10,6 +11,9 @@ View::View()
     auto pDisp = lv_linux_fbdev_create();
     lv_linux_fbdev_set_file(pDisp, "/dev/fb1");
     lv_display_set_rotation(pDisp, LV_DISPLAY_ROTATION_90);
+
+    auto pTheme = lv_theme_default_init(pDisp, lv_palette_main(LV_PALETTE_RED), lv_palette_main(LV_PALETTE_PURPLE), true, &lv_font_montserrat_18);
+    lv_display_set_theme(pDisp, pTheme);
 
     // Create input keys used by LVGL as rotary encoder replacement
     auto makeKey = [](const char* pName, lv_key_t key)
@@ -38,9 +42,11 @@ View::View()
     lv_style_set_pad_all(&style_, 5);
     lv_style_set_border_width(&style_, 1);
     lv_style_set_radius(&style_, 0);
+    lv_style_set_bg_color(&style_, lv_color_hex(0x000000));
 
     lv_style_init(&styleFocused_);
-    lv_style_set_outline_color(&styleFocused_, lv_color_hex(0x222222));
+    lv_style_set_outline_color(&styleFocused_, lv_color_hex(0xFFFFFF));
+    lv_style_set_outline_width(&styleFocused_, 2);
 
     lv_style_init(&styleSmall_);
     lv_style_set_text_font(&styleSmall_, &lv_font_montserrat_14);
@@ -49,7 +55,7 @@ View::View()
     lv_style_init(&styleSpinboxCursor_);
     lv_style_set_bg_opa(&styleSpinboxCursor_, 0);
     lv_style_set_text_opa(&styleSpinboxCursor_, 0);
-    lv_style_set_border_color(&styleSpinboxCursor_, lv_color_hex(0x6366f1));
+    lv_style_set_border_color(&styleSpinboxCursor_, lv_palette_main(LV_PALETTE_PURPLE));
     lv_style_set_border_width(&styleSpinboxCursor_, 2);
     lv_style_set_radius(&styleSpinboxCursor_, 2);
     lv_style_set_pad_ver(&styleSpinboxCursor_, 1);
@@ -63,6 +69,7 @@ View::View()
     createStatusTile();
     createSetupTile();
     createPoseTile();
+    createDebugTile();
     loadTile(0);
 
     lvThread_ = std::jthread(std::bind_front(&View::lvglThread, this));
@@ -98,12 +105,19 @@ void View::lvglThread(std::stop_token st)
         lv_label_set_text(status_.pLblTracker, state.tracker.c_str());
         lv_label_set_text(status_.pLblTrackerIp, state.trackerIp.c_str());
         lv_label_set_text_fmt(status_.pLblBallPos, "%6.2f %6.2f %6.2f", state.ballPos_m[0], state.ballPos_m[1], state.ballPos_m[2]);
-        lv_label_set_text_fmt(status_.pLblGimbal, "%.2fV, %.0f%% CPU", state.gimbalSupply_V, state.gimbalCpuLoad*100.0f);
         lv_label_set_text(pLblMode_, state.mode.c_str());
         lv_label_set_text_fmt(pLblPan_, "Pan: % .1f°", state.pan_deg);
         lv_label_set_text_fmt(pLblTilt_, "Tilt: % .1f°", state.tilt_deg);
         lv_label_set_text_fmt(setup_.pLblPanRange, "% .1f .. % .1f", state.limitPan_deg[0], state.limitPan_deg[1]);
         lv_label_set_text_fmt(setup_.pLblTiltRange, "% .1f .. % .1f", state.limitTilt_deg[0], state.limitTilt_deg[1]);
+
+        lv_label_set_text_fmt(debug_.pLblSupplyAndCpu, "%.2fV, %hu%% CPU", state.gimbalState.power.supplyVcc_mV*0.001f, (uint16_t)state.gimbalState.cpuLoad);
+        lv_label_set_text_fmt(debug_.pLblVelocity, "%.2f, %.2f", state.gimbalState.motion.encoderVelocityLP_rad[0], state.gimbalState.motion.encoderVelocityLP_rad[1]);
+        lv_label_set_text_fmt(debug_.pLblCurrent, "%.2f, %.2f", state.gimbalState.motion.currentQLP_A[0], state.gimbalState.motion.currentQLP_A[1]);
+        lv_label_set_text_fmt(debug_.pLblEncoderErrors, "0x%04X, 0x%04X", state.gimbalState.motion.encoderErrorFlags[0], state.gimbalState.motion.encoderErrorFlags[1]);
+        lv_label_set_text_fmt(debug_.pLblMotorErrors, "0x%04X, 0x%04X", state.gimbalState.motion.motorErrorFlags[0], state.gimbalState.motion.motorErrorFlags[1]);
+        lv_label_set_text_fmt(debug_.pLblMcuVersion, "%hu.%hu.%hu-g%08X%s", state.gimbalState.version.major, state.gimbalState.version.minor, state.gimbalState.version.patch, state.gimbalState.version.sha1,
+            (state.gimbalState.version.dirty ? "-D" : ""));
 
         if(newCameraPose.has_value())
         {
@@ -130,6 +144,7 @@ lv_obj_t* View::createHeader(lv_obj_t* pParent)
     lv_obj_set_grid_dsc_array(pHeaderGrid, headerColumnWidths, headerRowHeights);
 
     pBtnNavLeft_ = lv_button_create(pHeaderGrid);
+    lv_obj_add_style(pBtnNavLeft_, &styleFocused_, LV_STATE_FOCUS_KEY);
     lv_obj_set_grid_cell(pBtnNavLeft_, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, 0, 1);
     lv_obj_t* pLabel = lv_label_create(pBtnNavLeft_);
     lv_label_set_text(pLabel, LV_SYMBOL_LEFT);
@@ -141,6 +156,7 @@ lv_obj_t* View::createHeader(lv_obj_t* pParent)
     lv_obj_set_style_text_font(pLblTileName_, &lv_font_montserrat_18, 0);
 
     pBtnNavRight_ = lv_button_create(pHeaderGrid);
+    lv_obj_add_style(pBtnNavRight_, &styleFocused_, LV_STATE_FOCUS_KEY);
     lv_obj_set_grid_cell(pBtnNavRight_, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, 0, 1);
     pLabel = lv_label_create(pBtnNavRight_);
     lv_label_set_text(pLabel, LV_SYMBOL_RIGHT);
@@ -198,6 +214,7 @@ void View::setupScreen()
 
     // Content section
     pTileView_ = lv_tileview_create(pScreen);
+    lv_obj_set_style_bg_color(pTileView_, lv_color_hex(0x000000), 0);
     lv_obj_set_grid_cell(pTileView_, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
 
     // Footer section
@@ -211,12 +228,12 @@ lv_obj_t* View::createStatusTile()
 
     // Content Section
     static int32_t contentColumnWidths[] = { 70, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
-    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
 
     auto pContentGrid = lv_obj_create(pTile);
     lv_obj_add_style(pContentGrid, &style_, 0);
     lv_obj_add_style(pContentGrid, &styleSmall_, 0);
-    lv_obj_set_size(pContentGrid, LV_PCT(100), 130);
+    lv_obj_set_size(pContentGrid, LV_PCT(100), 120);
     lv_obj_set_scrollbar_mode(pContentGrid, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_grid_dsc_array(pContentGrid, contentColumnWidths, contentRowHeights);
 
@@ -238,7 +255,6 @@ lv_obj_t* View::createStatusTile()
     status_.pLblTracker = addRow("Tracker:", "None", 2);
     status_.pLblTrackerIp = addRow("", "-", 3);
     status_.pLblBallPos = addRow("Ball:", "-", 4);
-    status_.pLblGimbal = addRow("Gimbal:", "-", 5);
 
     // Button Section
     static int32_t buttonColumnWidths[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
@@ -246,7 +262,7 @@ lv_obj_t* View::createStatusTile()
 
     auto pButtonGrid = lv_obj_create(pTile);
     lv_obj_add_style(pButtonGrid, &style_, 0);
-    lv_obj_set_size(pButtonGrid, LV_PCT(100), 40);
+    lv_obj_set_size(pButtonGrid, LV_PCT(100), 50);
     lv_obj_align_to(pButtonGrid, pContentGrid, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 0);
     lv_obj_set_grid_dsc_array(pButtonGrid, buttonColumnWidths, buttonRowHeights);
 
@@ -424,6 +440,49 @@ lv_obj_t* View::createPoseTile()
     pose_.data.pName = "Cam Pose";
     pose_.data.pInputGroup = pInputGroup;
     lv_obj_set_user_data(pTile, &pose_.data);
+
+    return pTile;
+}
+
+lv_obj_t* View::createDebugTile()
+{
+    static int32_t contentColumnWidths[] = { 80, LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+    static int32_t contentRowHeights[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+
+    auto pTile = lv_tileview_add_tile(pTileView_, 3, 0, LV_DIR_HOR);
+    auto pInputGroup = lv_group_create();
+
+    auto pContentGrid = lv_obj_create(pTile);
+    lv_obj_add_style(pContentGrid, &style_, 0);
+    lv_obj_add_style(pContentGrid, &styleSmall_, 0);
+    lv_obj_set_size(pContentGrid, LV_PCT(100), 160);
+    lv_obj_set_scrollbar_mode(pContentGrid, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_grid_dsc_array(pContentGrid, contentColumnWidths, contentRowHeights);
+
+    auto addRow = [&](const char* pName, const char* pDefaultText, int32_t row)
+    {
+        auto pNameLabel = lv_label_create(pContentGrid);
+        lv_obj_set_grid_cell(pNameLabel, LV_GRID_ALIGN_START, 0, 1, LV_GRID_ALIGN_CENTER, row, 1);
+        lv_label_set_text(pNameLabel, pName);
+
+        auto pValueLabel = lv_label_create(pContentGrid);
+        lv_obj_set_grid_cell(pValueLabel, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_CENTER, row, 1);
+        lv_label_set_text(pValueLabel, pDefaultText);
+
+        return pValueLabel;
+    };
+
+    debug_.pLblSupplyAndCpu = addRow("MCU:", "-", 0);
+    debug_.pLblVelocity = addRow("Velocity:", "-", 1);
+    debug_.pLblCurrent = addRow("Current:", "-", 2);
+    debug_.pLblEncoderErrors = addRow("ENC Flags:", "-", 3);
+    debug_.pLblMotorErrors = addRow("MOT Flags:", "-", 4);
+    debug_.pLblMcuVersion = addRow("MCU VER:", "-", 5);
+    addRow("RPi VER:", GIT_VERSION_STR, 6);
+
+    debug_.data.pName = "Debug";
+    debug_.data.pInputGroup = pInputGroup;
+    lv_obj_set_user_data(pTile, &debug_.data);
 
     return pTile;
 }
