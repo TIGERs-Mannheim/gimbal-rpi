@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(gimbal_rpi)
+include(cmake/git_version.cmake)
+
+project(gimbal_rpi VERSION ${GIT_VERSION})
+
+# store GIT version info to file
+configure_file(src/git_version.h.in ${CMAKE_BINARY_DIR}/config/git_version.h)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -39,6 +44,7 @@ FetchContent_MakeAvailable(lvgl)
 include_directories(
     src
     src/util
+    ${CMAKE_BINARY_DIR}/config/
 )
 
 add_executable(${PROJECT_NAME}

@@ -47,8 +47,8 @@ public:
         float tilt_deg = 0.0f;
         std::array<float, 2> limitPan_deg = { -90.0f, 90.0f };
         std::array<float, 2> limitTilt_deg = { -40.0f, 40.0f };
-        float gimbalSupply_V = 0.0f;
-        float gimbalCpuLoad = 0.0f;
+
+        GimbalMsgState gimbalState;
     };
 
     View();
@@ -155,5 +155,10 @@ private:
         TileData data;
 
         lv_obj_t* pLblSupplyAndCpu;
+        lv_obj_t* pLblVelocity;
+        lv_obj_t* pLblCurrent;
+        lv_obj_t* pLblEncoderErrors;
+        lv_obj_t* pLblMotorErrors;
+        lv_obj_t* pLblMcuVersion;
     } debug_;
 };
