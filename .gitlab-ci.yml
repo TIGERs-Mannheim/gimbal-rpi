@@ -64,6 +64,6 @@ build-image-pizero:
     paths:
       - gimbal-rpi
       - versions
-#  only:
-#    - tags
-#    - master
+  only:
+    - tags
+    - master

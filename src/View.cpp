@@ -116,7 +116,7 @@ void View::lvglThread(std::stop_token st)
         lv_label_set_text_fmt(debug_.pLblCurrent, "%.2f, %.2f", state.gimbalState.motion.currentQLP_A[0], state.gimbalState.motion.currentQLP_A[1]);
         lv_label_set_text_fmt(debug_.pLblEncoderErrors, "0x%04X, 0x%04X", state.gimbalState.motion.encoderErrorFlags[0], state.gimbalState.motion.encoderErrorFlags[1]);
         lv_label_set_text_fmt(debug_.pLblMotorErrors, "0x%04X, 0x%04X", state.gimbalState.motion.motorErrorFlags[0], state.gimbalState.motion.motorErrorFlags[1]);
-        lv_label_set_text_fmt(debug_.pLblMcuVersion, "%hu.%hu.%hu-g%08X-%s", state.gimbalState.version.major, state.gimbalState.version.minor, state.gimbalState.version.patch, state.gimbalState.version.sha1,
+        lv_label_set_text_fmt(debug_.pLblMcuVersion, "%hu.%hu.%hu-g%08X%s", state.gimbalState.version.major, state.gimbalState.version.minor, state.gimbalState.version.patch, state.gimbalState.version.sha1,
             (state.gimbalState.version.dirty ? "-D" : ""));
 
         if(newCameraPose.has_value())
