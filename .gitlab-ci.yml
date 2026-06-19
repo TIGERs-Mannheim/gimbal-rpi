@@ -43,7 +43,7 @@ build-image-pizero:
     - export BR2_CCACHE_DIR="$PWD/buildroot-ccache"
     - cd tigers
     - mkdir -p board/gimbal_pizero/overlay/usr/lib/firmware
-    - 'curl --fail --location --output mcu.zip --header "JOB-TOKEN: $CI_JOB_TOKEN" "https://gitlab.tigers-mannheim.de/api/v4/projects/main%2Fgimbal-mcu-firmware/jobs/artifacts/master/download?job=deploy"'
+    - 'curl --fail --location --output mcu.zip --header "PRIVATE-TOKEN: ${GIMBAL_MCU_FW_TOKEN}" "https://gitlab.tigers-mannheim.de/api/v4/projects/main%2Fgimbal-mcu-firmware/jobs/artifacts/master/download?job=deploy"'
     - unzip mcu.zip -d board/gimbal_pizero/overlay/usr/lib/firmware
     - ls board/gimbal_pizero/overlay/usr/lib/firmware
     - make gimbal_pizero_initramfs_defconfig
