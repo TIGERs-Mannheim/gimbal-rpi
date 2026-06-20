@@ -23,8 +23,8 @@ public:
 
     auto& getState() const { return state_; }
 
-    float getCurrentPan_deg() const { return -RAD_TO_DEG(state_.motion.encoderPosition_rad[0]) - settings_.cameraPose.axisZeroOffsets_deg[0]; }
-    float getCurrentTilt_deg() const { return RAD_TO_DEG(state_.motion.encoderPosition_rad[1]) - settings_.cameraPose.axisZeroOffsets_deg[1]; }
+    float getCurrentPan_deg() const { return -RAD_TO_DEG(state_.motion.encoderPosition_rad[0] + dynamicPosOffset_rad_[0]) - settings_.cameraPose.axisZeroOffsets_deg[0]; }
+    float getCurrentTilt_deg() const { return RAD_TO_DEG(state_.motion.encoderPosition_rad[1] + dynamicPosOffset_rad_[1]) - settings_.cameraPose.axisZeroOffsets_deg[1]; }
 
     float getCurrentPositionRaw_deg(uint8_t axisId) const;
 
@@ -44,4 +44,7 @@ private:
     GimbalMsgState state_ {};
 
     std::unique_ptr<STBootloader> pBootloader_;
+
+    bool isFirstStateReceived_ = false;
+    float dynamicPosOffset_rad_[2] {};
 };
