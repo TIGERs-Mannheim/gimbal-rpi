@@ -31,6 +31,9 @@ void GimbalController::spinOnce()
     if(!pBootloader_->isActive())
         transceiver_.spinOnce();
 
+    if(!isConnected())
+        isFirstStateReceived_ = false;
+
     gimbal_protocol::Message msg;
 
     while(transceiver_.receive(msg))
@@ -65,6 +68,29 @@ void GimbalController::spinOnce()
 
                             LOG(INFO) << "Sent calibration for servo " << i;
                         }
+                    }
+
+                    if(!isFirstStateReceived_)
+                    {
+                        isFirstStateReceived_ = true;
+                        float pos[2] = { state_.motion.encoderPosition_rad[0] - DEG_TO_RAD(settings_.cameraPose.axisZeroOffsets_deg[0]),
+                            state_.motion.encoderPosition_rad[1] - DEG_TO_RAD(settings_.cameraPose.axisZeroOffsets_deg[1]) };
+
+                        LOG(INFO) << "First state received. Pan: " << pos[0] << ", tilt: " << pos[1];
+
+                        while(pos[0]+dynamicPosOffset_rad_[0] > M_PIf)
+                            dynamicPosOffset_rad_[0] -= 2.0f * M_PI;
+
+                        while(pos[0]+dynamicPosOffset_rad_[0] < -M_PIf)
+                            dynamicPosOffset_rad_[0] += 2.0f * M_PI;
+
+                        while(pos[1]+dynamicPosOffset_rad_[1] > M_PIf)
+                            dynamicPosOffset_rad_[1] -= 2.0f * M_PI;
+
+                        while(pos[1]+dynamicPosOffset_rad_[1] < -M_PIf)
+                            dynamicPosOffset_rad_[1] += 2.0f * M_PI;
+
+                        LOG(INFO) << "Dynamic offsets: " << dynamicPosOffset_rad_[0] << ", " << dynamicPosOffset_rad_[1];
                     }
                 }
             }
@@ -130,8 +156,8 @@ void GimbalController::setTargetPos(float pan_deg, float tilt_deg)
         return;
 
     GimbalMsgTaskMove move;
-    move.target[0] = -DEG_TO_RAD(pan_deg + settings_.cameraPose.axisZeroOffsets_deg[0]);
-    move.target[1] = DEG_TO_RAD(tilt_deg + settings_.cameraPose.axisZeroOffsets_deg[1]);
+    move.target[0] = -DEG_TO_RAD(pan_deg + settings_.cameraPose.axisZeroOffsets_deg[0]) - dynamicPosOffset_rad_[0];
+    move.target[1] = DEG_TO_RAD(tilt_deg + settings_.cameraPose.axisZeroOffsets_deg[1]) - dynamicPosOffset_rad_[1];
     move.velMax_radDs = DEG_TO_RAD(settings_.limits.velMax_degDs);
     move.accMax_radDs2 = DEG_TO_RAD(settings_.limits.accMax_degDs2);
     move.jerkMax_radDs3 = DEG_TO_RAD(settings_.limits.jerkMax_degDs3);
